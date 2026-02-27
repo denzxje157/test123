@@ -106,14 +106,34 @@ const CartDrawer: React.FC = () => {
 
       // Nếu là COD thì xử lý luôn, không cần chờ Webhook
       if (paymentMethod === 'cod') {
+        
+        // --- THÊM ĐOẠN NÀY ĐỂ GỌI API GỬI MAIL ---
+        try {
+          await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId: newOrderId,
+              customerEmail: formData.email,
+              customerName: formData.name,
+              total: totalPrice,
+              address: formData.address,
+              paymentMethod: paymentText
+            })
+          });
+        } catch (e) {
+          console.error("Lỗi khi gọi API gửi mail COD:", e);
+        }
+        // ------------------------------------------
+
         setOrderStatus('paid'); // Giả vờ 'paid' để hiện tích xanh
         setTimeout(() => {
            const codMsg = `Chào Sắc Việt, tôi vừa đặt đơn hàng COD mã: ${newOrderId}`;
-           window.open(`https://zalo.me/0987654321?text=${encodeURIComponent(codMsg)}`, '_blank'); 
+           window.location.href = `https://zalo.me/0987654321?text=${encodeURIComponent(codMsg)}`;
            clearCart();
         }, 3000);
       }
-
+      
     } catch (error) {
       console.error('Lỗi lưu đơn hàng:', error);
       setIsSubmitting(false);
