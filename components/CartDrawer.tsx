@@ -1,27 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
-import { supabase, isSupabaseConfigured } from '../services/supabaseClient.ts';
+import { supabase } from '../services/supabaseClient.ts';
 import { orderService } from '../services/orderService';
 
 const CartDrawer: React.FC = () => {
   const { cart, isCartOpen, toggleCart, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
   const { user, toggleAuthModal } = useAuth();
+  
   const [step, setStep] = useState<'cart' | 'checkout' | 'success'>('cart');
-  const [formData, setFormData] = useState({ name: '', phone: '', address: '', note: '' });
+  const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '', note: '' });
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'qr'>('cod');
   const [orderId, setOrderId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Thêm state để lắng nghe trạng thái thanh toán từ Supabase
+  const [orderStatus, setOrderStatus] = useState<'pending' | 'paid'>('pending');
 
   useEffect(() => {
     if (user) {
       setFormData(prev => ({
         ...prev,
         name: user.fullName || prev.name,
-        email: user.email || '',
+        email: user.email || prev.email,
       }));
     }
   }, [user]);
+
+  // HỆ THỐNG LẮNG NGHE TIỀN VỀ (POLLING) - CHUẨN SHOPEE
+  useEffect(() => {
+    if (step !== 'success' || !orderId || paymentMethod === 'cod') return;
+
+    // Cứ 3 giây hỏi Database 1 lần xem đơn này đã 'paid' chưa
+    const interval = setInterval(async () => {
+      try {
+        const { data } = await supabase
+          .from('orders')
+          .select('status')
+          .eq('order_id', orderId)
+          .single();
+
+        if (data && data.status === 'paid') {
+          // BÙM! Có người chuyển khoản -> Dừng hỏi và chuyển trạng thái UI
+          setOrderStatus('paid');
+          clearInterval(interval);
+          
+          // Chuyển khoản xong thì tự động xóa giỏ hàng và mở Zalo
+          setTimeout(() => {
+            const zaloMsg = `Chào Sắc Việt, tôi đã thanh toán thành công đơn hàng ${orderId}.`;
+            window.open(`https://zalo.me/0987654321?text=${encodeURIComponent(zaloMsg)}`, '_blank');
+            clearCart();
+          }, 2000);
+        }
+      } catch (err) {
+        console.error("Lỗi kiểm tra thanh toán:", err);
+      }
+    }, 3000);
+
+    // Dọn dẹp bộ đếm nếu đóng giỏ hàng
+    return () => clearInterval(interval);
+  }, [step, orderId, paymentMethod]);
 
   if (!isCartOpen) return null;
 
@@ -34,6 +72,7 @@ const CartDrawer: React.FC = () => {
 
     setIsSubmitting(true);
     
+    // Sinh mã đơn hàng
     const newOrderId = `SN-${Math.floor(100000 + Math.random() * 900000)}`;
     setOrderId(newOrderId);
     
@@ -45,64 +84,46 @@ const CartDrawer: React.FC = () => {
       customer_info: {
         name: formData.name,
         phone: formData.phone,
+        email: formData.email,
         address: formData.address,
         note: formData.note
       },
       payment_method: paymentText,
       total: totalPrice,
       items: cart,
-      status: 'pending' as const,
+      status: 'pending' as const, // Mặc định là chờ thanh toán
       created_at: new Date().toISOString()
     };
 
     try {
-      // 1. Lưu đơn hàng qua Service (Hỗ trợ cả Local & Supabase)
+      // Lưu đơn vào Database
       await orderService.createOrder(orderData);
       
-      // Tạo nội dung tin nhắn Zalo
-      let message = `🛒 *ĐƠN ĐẶT HÀNG MỚI TỪ SẮC VIỆT*\n`;
-      message += `🔖 Mã đơn: ${newOrderId}\n`;
-      message += `--------------------------------\n`;
-      message += `👤 Khách hàng: ${formData.name}\n`;
-      message += `📞 SĐT: ${formData.phone}\n`;
-      message += `📍 Địa chỉ: ${formData.address}\n`;
-      if (formData.note) message += `📝 Ghi chú: ${formData.note}\n`;
-      message += `💳 Phương thức: ${paymentText}\n`;
-      message += `--------------------------------\n`;
-      cart.forEach((item, index) => {
-        message += `${index + 1}. ${item.name} (${item.ethnic}) \n   SL: ${item.quantity} x ${item.price}\n`;
-      });
-      message += `--------------------------------\n`;
-      message += `💰 *TỔNG CỘNG: ${totalPrice.toLocaleString('vi-VN')} VNĐ*\n`;
-      
-      // Copy nội dung và mở Zalo
-      await navigator.clipboard.writeText(message);
-      
-      console.log('Đang gửi email xác nhận đến:', user.email);
-      
-      // Chuyển sang bước thành công
+      // Chuyển sang màn hình "Chờ thanh toán"
       setStep('success');
+      setOrderStatus('pending');
       setIsSubmitting(false);
-      
-      setTimeout(() => {
-         // Mở trang Zalo (thay số điện thoại shop ở đây)
-         window.open(`https://zalo.me/0987654321`, '_blank'); 
-         clearCart();
-         setStep('cart');
-      }, 3000);
+
+      // Nếu là COD thì xử lý luôn, không cần chờ Webhook
+      if (paymentMethod === 'cod') {
+        setOrderStatus('paid'); // Giả vờ 'paid' để hiện tích xanh
+        setTimeout(() => {
+           const codMsg = `Chào Sắc Việt, tôi vừa đặt đơn hàng COD mã: ${newOrderId}`;
+           window.open(`https://zalo.me/0987654321?text=${encodeURIComponent(codMsg)}`, '_blank'); 
+           clearCart();
+        }, 3000);
+      }
 
     } catch (error) {
-      console.error('Lỗi không xác định:', error);
+      console.error('Lỗi lưu đơn hàng:', error);
       setIsSubmitting(false);
     }
   };
 
   return (
     <div className="fixed inset-0 z-[200] flex justify-end font-display">
-      {/* Overlay */}
       <div className="absolute inset-0 bg-text-main/60 backdrop-blur-sm animate-fade-in" onClick={toggleCart}></div>
       
-      {/* Drawer Panel */}
       <div className="relative w-full max-w-md bg-[#F7F3E9] h-full shadow-2xl flex flex-col border-l-4 border-gold animate-slide-in-right">
         
         {/* Header */}
@@ -124,6 +145,7 @@ const CartDrawer: React.FC = () => {
         {/* Body Content */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-[#F7F3E9]">
           
+          {/* STEP 1: XEM GIỎ HÀNG */}
           {step === 'cart' && (
             <>
               {cart.length === 0 ? (
@@ -161,6 +183,7 @@ const CartDrawer: React.FC = () => {
             </>
           )}
 
+          {/* STEP 2: NHẬP THÔNG TIN (KHÔNG HIỆN QR Ở ĐÂY NỮA) */}
           {step === 'checkout' && (
              <div className="bg-white p-6 rounded-3xl border border-gold/20 shadow-sm animate-fade-in">
                 <h3 className="font-black text-text-main uppercase text-sm mb-6 flex items-center gap-2">
@@ -173,7 +196,11 @@ const CartDrawer: React.FC = () => {
                       <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-background-light border border-gold/20 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Ví dụ: Nguyễn Văn A" />
                    </div>
                    <div>
-                      <label className="block text-[10px] font-black uppercase text-bronze mb-1 ml-2">Số điện thoại</label>
+                      <label className="block text-[10px] font-black uppercase text-bronze mb-1 ml-2">Email xác nhận</label>
+                      <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-background-light border border-gold/20 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Ví dụ: email@gmail.com" />
+                   </div>
+                   <div>
+                      <label className="block text-[10px] font-black uppercase text-bronze mb-1 ml-2">Số điện thoại (Zalo)</label>
                       <input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-background-light border border-gold/20 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Ví dụ: 0912..." />
                    </div>
                    <div>
@@ -182,115 +209,80 @@ const CartDrawer: React.FC = () => {
                    </div>
                    <div>
                       <label className="block text-[10px] font-black uppercase text-bronze mb-1 ml-2">Lời nhắn (Tùy chọn)</label>
-                      <textarea value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} className="w-full bg-background-light border border-gold/20 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary min-h-[60px]" placeholder="Ghi chú thêm cho người bán..."></textarea>
+                      <textarea value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} className="w-full bg-background-light border border-gold/20 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary min-h-[60px]"></textarea>
                    </div>
 
-                   {/* Phương thức thanh toán */}
                    <div className="mt-6 pt-4 border-t border-gold/10">
                       <label className="block text-[10px] font-black uppercase text-bronze mb-3 ml-2">Phương thức thanh toán</label>
                       <div className="grid grid-cols-2 gap-3">
                         <label className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-primary bg-primary/5 text-primary shadow-sm' : 'border-gold/20 bg-background-light text-text-soft hover:bg-gold/5'}`}>
                           <input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="sr-only" />
                           <span className="material-symbols-outlined mb-2 text-3xl">local_shipping</span>
-                          <span className="text-xs font-bold text-center">Thanh toán khi nhận hàng (COD)</span>
+                          <span className="text-xs font-bold text-center">Thanh toán nhận hàng</span>
                         </label>
                         <label className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'qr' ? 'border-primary bg-primary/5 text-primary shadow-sm' : 'border-gold/20 bg-background-light text-text-soft hover:bg-gold/5'}`}>
                           <input type="radio" name="payment" value="qr" checked={paymentMethod === 'qr'} onChange={() => setPaymentMethod('qr')} className="sr-only" />
                           <span className="material-symbols-outlined mb-2 text-3xl">qr_code_2</span>
-                          <span className="text-xs font-bold text-center">Chuyển khoản (QR Code)</span>
+                          <span className="text-xs font-bold text-center">Chuyển khoản QR</span>
                         </label>
                       </div>
-                      
-                      {/* HIỂN THỊ VIETQR VỚI THÔNG TIN TÀI KHOẢN MB BANK */}
-                      {paymentMethod === 'qr' && (
-                        <div className="mt-4 p-5 bg-white rounded-2xl border border-gold/20 flex flex-col items-center text-center shadow-inner animate-fade-in">
-                          <p className="text-xs font-bold text-text-main mb-3 bg-gold-light/30 px-3 py-1 rounded-full">Quét mã QR để thanh toán</p>
-                          <div className="bg-white p-2 rounded-xl border border-gray-100 shadow-sm mb-3">
-                            <img 
-                              src={`https://img.vietqr.io/image/MB-666150707-compact2.png?amount=${totalPrice}&addInfo=Thanh%20toan%20don%20hang%20Sac%20Viet&accountName=NGUYEN%20HOANG%20ANH`} 
-                              alt="VietQR MB Bank" 
-                              className="w-48 h-48 object-contain" 
-                            />
-                          </div>
-                          <div className="text-[11px] text-text-soft space-y-1 bg-background-light w-full p-3 rounded-xl border border-gold/10 text-left pl-6">
-                            <p><span className="font-bold text-text-main">Ngân hàng:</span> MB Bank</p>
-                            <p><span className="font-bold text-text-main">Số tài khoản:</span> 666150707</p>
-                            <p><span className="font-bold text-text-main">Chủ tài khoản:</span> NGUYEN HOANG ANH</p>
-                            <p><span className="font-bold text-text-main">Số tiền cần chuyển:</span> <span className="text-primary font-black">{totalPrice.toLocaleString('vi-VN')} đ</span></p>
-                          </div>
-                        </div>
-                      )}
                    </div>
                 </form>
              </div>
           )}
 
+          {/* STEP 3: MÀN HÌNH CHỜ THANH TOÁN HOẶC THÀNH CÔNG */}
           {step === 'success' && (
-             <div className="h-full flex flex-col items-center justify-center text-center p-6 animate-fade-in">
+             <div className="h-full flex flex-col items-center justify-center text-center p-2 animate-fade-in">
                 
-                {/* LOGIC LẮNG NGHE TRẠNG THÁI ĐƠN HÀNG (POLLING) */}
-                {(() => {
-                  const [orderStatus, setOrderStatus] = useState<'pending' | 'paid'>('pending');
-                  
-                  useEffect(() => {
-                    if (!orderId || paymentMethod === 'cod') {
-                      if (paymentMethod === 'cod') setOrderStatus('paid'); // COD thì cho qua luôn
-                      return;
-                    }
+                {paymentMethod === 'qr' && orderStatus === 'pending' ? (
+                   // GIAO DIỆN ĐANG CHỜ KHÁCH QUÉT MÃ QR
+                   <div className="bg-white p-6 rounded-3xl border border-gold/20 shadow-xl w-full flex flex-col items-center">
+                     <p className="text-xs font-black text-primary uppercase tracking-widest mb-2">Quét mã để thanh toán</p>
+                     <p className="text-xs text-text-soft mb-4">Đơn hàng <span className="font-bold text-text-main">{orderId}</span></p>
+                     
+                     <div className="bg-white p-2 rounded-xl border-2 border-primary border-dashed mb-4 relative">
+                        {/* QUAN TRỌNG: Dùng orderId làm Nội dung chuyển khoản để SePay nhận diện */}
+                        <img 
+                          src={`https://img.vietqr.io/image/MB-666150707-compact2.png?amount=${totalPrice}&addInfo=${orderId}&accountName=NGUYEN%20HOANG%20ANH`} 
+                          alt="VietQR MB Bank" 
+                          className="w-56 h-56 object-contain" 
+                        />
+                     </div>
+                     
+                     <div className="text-[11px] text-text-soft space-y-1 bg-background-light w-full p-4 rounded-xl border border-gold/10 text-left mb-6">
+                        <p><span className="font-bold text-text-main">Ngân hàng:</span> MB Bank</p>
+                        <p><span className="font-bold text-text-main">Số tài khoản:</span> 666150707</p>
+                        <p><span className="font-bold text-text-main">Chủ tài khoản:</span> NGUYEN HOANG ANH</p>
+                        <p><span className="font-bold text-text-main">Số tiền:</span> <span className="text-primary font-black text-sm">{totalPrice.toLocaleString('vi-VN')} đ</span></p>
+                        <p><span className="font-bold text-text-main">Nội dung:</span> <span className="font-bold text-primary">{orderId}</span></p>
+                     </div>
 
-                    // Vòng lặp hỏi thăm Database mỗi 3 giây
-                    const interval = setInterval(async () => {
-                      const { data } = await supabase
-                        .from('orders')
-                        .select('status')
-                        .eq('order_id', orderId)
-                        .single();
-                      
-                      if (data && data.status === 'paid') {
-                        setOrderStatus('paid');
-                        clearInterval(interval);
-                        
-                        // Tự động mở Zalo khi thanh toán xong
-                        setTimeout(() => {
-                          const zaloMessage = `Chào Sắc Việt, tôi vừa thanh toán thành công đơn hàng ${orderId}`;
-                          window.open(`https://zalo.me/0987654321?text=${encodeURIComponent(zaloMessage)}`, '_blank');
-                          clearCart();
-                          setStep('cart');
-                        }, 3000);
-                      }
-                    }, 3000);
-
-                    return () => clearInterval(interval);
-                  }, [orderId, paymentMethod]);
-
-                  return orderStatus === 'pending' && paymentMethod === 'qr' ? (
-                    // Giao diện CHỜ THANH TOÁN
-                    <div className="flex flex-col items-center">
-                      <div className="relative w-24 h-24 mb-6">
-                        <div className="absolute inset-0 border-4 border-gold/30 rounded-full"></div>
-                        <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                        <span className="absolute inset-0 flex items-center justify-center material-symbols-outlined text-3xl text-primary animate-pulse">qr_code_scanner</span>
-                      </div>
-                      <h3 className="text-2xl font-black text-text-main mb-2">Đang chờ thanh toán...</h3>
-                      <p className="text-text-soft text-sm mb-6">Vui lòng không đóng cửa sổ này. Hệ thống sẽ tự động xác nhận ngay khi nhận được tiền.</p>
-                      <div className="bg-background-light p-4 rounded-xl border border-gold/20 font-mono text-lg font-bold tracking-widest text-primary">
-                        {orderId}
-                      </div>
-                    </div>
-                  ) : (
-                    // Giao diện ĐÃ THANH TOÁN THÀNH CÔNG
-                    <div className="flex flex-col items-center animate-slide-up">
+                     <div className="flex items-center gap-2 text-primary">
+                        <span className="material-symbols-outlined animate-spin">sync</span>
+                        <p className="text-xs font-bold animate-pulse">Hệ thống đang chờ nhận tiền...</p>
+                     </div>
+                   </div>
+                ) : (
+                   // GIAO DIỆN ĐÃ THANH TOÁN THÀNH CÔNG (Sau khi SePay báo về)
+                   <div className="flex flex-col items-center animate-slide-up bg-white p-8 rounded-3xl border border-gold/20 shadow-xl w-full">
                       <div className="size-24 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-inner relative">
                         <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-20"></div>
                         <span className="material-symbols-outlined text-5xl text-green-600">check_circle</span>
                       </div>
-                      <h3 className="text-2xl font-black text-text-main mb-3">Thanh toán thành công!</h3>
-                      <p className="text-text-soft mb-8 text-sm px-4">Đơn hàng <span className="font-bold text-primary">{orderId}</span> đã được xác nhận. Hóa đơn đã được gửi qua Email của bạn.</p>
-                      <p className="text-xs font-bold text-bronze animate-pulse">Đang chuyển hướng đến Zalo...</p>
-                    </div>
-                  );
-                })()}
-                
+                      <h3 className="text-2xl font-black text-text-main mb-3 leading-tight">Đặt Hàng <br/> Thành Công!</h3>
+                      
+                      <div className="bg-background-light px-6 py-4 rounded-2xl border border-gold/20 mb-6 shadow-sm w-full">
+                        <p className="text-[10px] text-text-soft uppercase font-black tracking-widest mb-1">Mã đơn hàng</p>
+                        <p className="text-xl font-black text-primary tracking-widest">{orderId}</p>
+                      </div>
+                      
+                      <p className="text-text-soft mb-6 text-sm">Cảm ơn bạn. Thông tin hóa đơn sẽ sớm được gửi qua Email.</p>
+                      <p className="text-xs font-bold text-primary animate-pulse flex items-center gap-2">
+                        Đang chuyển hướng Zalo <span className="material-symbols-outlined text-sm">open_in_new</span>
+                      </p>
+                   </div>
+                )}
              </div>
           )}
         </div>
@@ -334,6 +326,8 @@ const CartDrawer: React.FC = () => {
         .animate-slide-in-right { animation: slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
         .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
+        @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-up { animation: slide-up 0.4s ease-out forwards; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 10px; }
@@ -342,4 +336,4 @@ const CartDrawer: React.FC = () => {
   );
 };
 
-export default CartDrawer;  
+export default CartDrawer;
