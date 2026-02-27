@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useCart } from '../context/CartContext.tsx'; // Import thêm useCart
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient.ts';
@@ -31,6 +32,7 @@ interface Order {
 
 const OrdersPage: React.FC = () => {
   const { user } = useAuth();
+  const { addToCart, toggleCart } = useCart() || {}; // Khởi tạo Cart Context
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -68,9 +70,8 @@ const OrdersPage: React.FC = () => {
           const savedOrders = localStorage.getItem(`sacnoi_orders_${user.id}`);
           if (savedOrders) {
             const parsed = JSON.parse(savedOrders);
-            // Map structure if needed, assuming saved structure matches Supabase schema roughly
             const mappedOrders: Order[] = parsed.map((order: any) => ({
-               id: order.order_id || order.id, // Handle both formats
+               id: order.order_id || order.id, 
                userId: order.user_id || order.userId,
                customer: order.customer_info || order.customer,
                paymentMethod: order.payment_method || order.paymentMethod,
@@ -88,6 +89,44 @@ const OrdersPage: React.FC = () => {
 
     fetchOrders();
   }, [user]);
+
+  // --- HÀM XỬ LÝ NÚT BẤM (MỚI) ---
+  
+  // 1. Xử lý nút Mua Lại
+  const handleBuyAgain = (items: OrderItem[]) => {
+    if (!addToCart) return;
+    
+    // Quét từng sản phẩm trong đơn cũ
+    items.forEach((item) => {
+      // Phục dựng lại Object Product để phù hợp với hàm addToCart
+      const productToAdd = {
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        // Chuyển đổi chuỗi giá thành số (ví dụ: "150.000 VNĐ" -> 150000)
+        priceValue: parseInt(item.price.replace(/[^\d]/g, '')) || 0,
+        ethnic: item.ethnic,
+        img: item.img,
+        // Cấp dữ liệu giả cho các trường bắt buộc của Product type
+        desc: '', artisan: 'Bản địa', exp: '', sold: 0, category: 'craft'
+      };
+
+      // Gọi hàm thêm vào giỏ bằng đúng số lượng đã mua trước đó
+      const qty = item.quantity || 1;
+      for (let i = 0; i < qty; i++) {
+        addToCart(productToAdd as any);
+      }
+    });
+
+    // Thông báo và mở giỏ hàng
+    alert('Đã thêm các sản phẩm vào giỏ hàng thành công!');
+    if (toggleCart) toggleCart();
+  };
+
+  // 2. Xử lý nút Liên hệ hỗ trợ
+  const handleContactSupport = (orderId: string) => {
+    alert(`Yêu cầu hỗ trợ cho đơn hàng mã: ${orderId}\n\nChăm sóc khách hàng của Sắc Việt sẽ liên hệ với bạn trong thời gian sớm nhất. Hotline khẩn cấp: 1900 xxxx.`);
+  };
 
   if (!user) {
     return (
@@ -141,7 +180,7 @@ const OrdersPage: React.FC = () => {
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                key={order.id} 
+                key={order.id || Math.random().toString()} 
                 className="bg-white rounded-3xl border border-gold/20 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
               >
                 {/* Order Header */}
@@ -152,12 +191,14 @@ const OrdersPage: React.FC = () => {
                       </div>
                       <div>
                          <p className="text-[10px] text-text-soft font-black uppercase tracking-widest">Mã đơn hàng</p>
-                         <p className="text-lg font-black text-text-main">{order.id}</p>
+                         <p className="text-lg font-black text-text-main">{order.id || 'Đang cập nhật'}</p>
                       </div>
                    </div>
                    <div className="text-right">
                       <p className="text-[10px] text-text-soft font-black uppercase tracking-widest">Ngày đặt</p>
-                      <p className="text-sm font-bold text-text-main">{new Date(order.date).toLocaleDateString('vi-VN')} - {new Date(order.date).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}</p>
+                      <p className="text-sm font-bold text-text-main">
+                         {order.date ? new Date(order.date).toLocaleDateString('vi-VN') : 'Đang cập nhật'} - {order.date ? new Date(order.date).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) : ''}
+                      </p>
                    </div>
                 </div>
 
@@ -171,41 +212,48 @@ const OrdersPage: React.FC = () => {
                             order.status === 'Đang xử lý' ? 'bg-yellow-100 text-yellow-700' :
                             'bg-gray-100 text-gray-700'
                          }`}>
-                            {order.status}
+                            {order.status || 'Đang xử lý'}
                          </span>
-                         <span className="text-xs text-text-soft font-medium">| {order.paymentMethod}</span>
+                         <span className="text-xs text-text-soft font-medium">| {order.paymentMethod || 'COD'}</span>
                       </div>
                       <div className="text-right">
                          <span className="text-xs text-text-soft font-bold mr-2">Tổng tiền:</span>
-                         <span className="text-xl font-black text-primary">{order.total.toLocaleString('vi-VN')} đ</span>
+                         <span className="text-xl font-black text-primary">{(order.total || 0).toLocaleString('vi-VN')} đ</span>
                       </div>
                    </div>
 
                    {/* Items List */}
                    <div className="space-y-4">
-                      {order.items.map((item, idx) => (
-                         <div key={idx} className="flex gap-4 items-center">
+                      {(order.items || []).map((item, idx) => (
+                         <div key={idx} className="flex gap-4 items-center hover:bg-background-light/50 p-2 rounded-xl transition-colors">
                             <div className="size-16 rounded-xl bg-gray-100 border border-gold/10 overflow-hidden shrink-0">
-                               <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
+                               <img src={item?.img || ''} alt={item?.name || 'Sản phẩm'} className="w-full h-full object-cover" />
                             </div>
                             <div className="flex-1 min-w-0">
-                               <h4 className="font-bold text-text-main text-sm truncate">{item.name}</h4>
-                               <p className="text-[10px] text-bronze uppercase font-black tracking-widest">{item.ethnic}</p>
+                               <h4 className="font-bold text-text-main text-sm truncate">{item?.name || 'Sản phẩm'}</h4>
+                               <p className="text-[10px] text-bronze uppercase font-black tracking-widest">{item?.ethnic || ''}</p>
                             </div>
                             <div className="text-right shrink-0">
-                               <p className="text-sm font-bold text-text-main">{item.price}</p>
-                               <p className="text-xs text-text-soft">x{item.quantity}</p>
+                               <p className="text-sm font-bold text-text-main">{item?.price || '0 đ'}</p>
+                               <p className="text-xs text-text-soft">x{item?.quantity || 1}</p>
                             </div>
                          </div>
                       ))}
                    </div>
                    
-                   {/* Actions */}
+                   {/* Actions (Các nút đã được kích hoạt) */}
                    <div className="mt-6 pt-6 border-t border-gold/10 flex justify-end gap-3">
-                      <button className="px-5 py-2.5 rounded-xl border border-gold/20 text-text-main text-sm font-bold hover:bg-background-light transition-colors">
+                      <button 
+                        onClick={() => handleContactSupport(order.id || 'N/A')}
+                        className="px-5 py-2.5 rounded-xl border border-gold/20 text-text-main text-sm font-bold hover:bg-background-light transition-colors active:scale-95"
+                      >
                          Liên hệ hỗ trợ
                       </button>
-                      <button className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:brightness-110 shadow-lg shadow-primary/20 transition-all">
+                      <button 
+                        onClick={() => handleBuyAgain(order.items || [])}
+                        className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:brightness-110 shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2"
+                      >
+                         <span className="material-symbols-outlined text-base">shopping_bag</span>
                          Mua lại
                       </button>
                    </div>

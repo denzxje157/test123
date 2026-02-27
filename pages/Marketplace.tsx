@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
@@ -21,7 +20,7 @@ interface Product {
 
 // Helper để tạo ảnh giả lập dựa trên tên sản phẩm
 const getImageForProduct = (name: string, index: number) => {
-  const n = name.toLowerCase();
+  const n = (name || '').toLowerCase();
   let keyword = 'craft';
   
   if (n.includes('gùi') || n.includes('đan') || n.includes('sọt') || n.includes('giỏ')) keyword = 'wicker+basket';
@@ -42,7 +41,6 @@ const getImageForProduct = (name: string, index: number) => {
 };
 
 export const rawData = [
-  // ... (Giữ nguyên dữ liệu cũ của bạn) ...
   { e: "BA NA", items: [
     { n: "Gùi mini (Trang trí)", p: "50.000 - 150.000 VNĐ", img: "https://down-vn.img.susercontent.com/file/78d869fc7f29ac98f4a7a1aaf725cd57", d: "Phiên bản thu nhỏ của chiếc gùi đại ngàn, được đan tỉ mỉ bởi đôi tay khéo léo của người Ba Na. Nó không chỉ là vật trang trí, mà là lời nhắc nhở về sự cần cù, chịu khó và vẻ đẹp mộc mạc của núi rừng Tây Nguyên." },
     { n: "Gùi múa (Biểu diễn)", p: "250.000 - 450.000 VNĐ", img: "https://cdn.nhandan.vn/images/22f099ca8bc7ae81aa2a8d3416a84bf8141e17aab8e836f6a34f0689f96932c4b79cc3f1de038d147c96eecef8a31cbd392c3683b956cc79feec098a0166d49cb7ae13cda333b1a658a4aa09dbd85477/tn2-6506.jpg.webp", d: "Chiếc gùi nhẹ nhàng, thanh thoát dùng trong các điệu múa xoang truyền thống. Mỗi nhịp gùi đung đưa là một nhịp thở của buôn làng trong ngày hội mùa, cầu mong mưa thuận gió hòa." },
@@ -100,7 +98,6 @@ export const rawData = [
     { n: "Chiếu mây loại thường", p: "1.500.000 – 3.000.000 VNĐ", img: "https://hoanghamobile.com/tin-tuc/wp-content/uploads/2025/08/chieu-may-5.jpg", d: "Được dệt từ những sợi mây rừng chọn lọc, chiếu mây người Cống nổi tiếng bền đẹp, càng dùng càng bóng, mang lại giấc ngủ ngon lành." },
     { n: "Chiếu mây cao cấp", p: "4.000.000 – 8.000.000 VNĐ", img: "https://thegioichieutruc.com/wp-content/uploads/2024/09/Uu1-4.png", d: "Tuyệt phẩm thủ công đòi hỏi hàng tháng trời lao động. Những sợi mây nhỏ nhất, đều nhất được tuyển chọn để dệt nên tấm chiếu mềm mại như lụa, quý giá vô cùng." }
   ]},
-  // 14-22
   { e: "DAO", items: [
     { n: "Thuốc tắm người Dao đỏ", p: "30.000 – 150.000 VNĐ", img: "https://media.loveitopcdn.com/28306/thumb/600x600/091916-nuoc-tam-dao-do-danh-cho-phu-nu-sau-sinh-cham-soc-suc-khoe-sau-sinh.jpg?zc=1", d: "Bài thuốc bí truyền từ hàng trăm loại lá rừng, giúp hồi phục sức khỏe thần kỳ, đặc biệt cho phụ nữ sau sinh. Ngâm mình trong thùng gỗ pơ mu, mọi mệt mỏi tan biến." },
     { n: "Trang sức Bạc chạm khắc", p: "500.000 – Vài triệu đồng", img: "https://baothainguyen.vn/file/oldimage/baothainguyen/UserFiles/image/20210506100449_chambac1.jpg", d: "Bạc không chỉ là trang sức mà còn là bùa hộ mệnh, là của hồi môn. Nghệ thuật chạm khắc bạc của người Dao đạt đến độ tinh xảo với hoa văn chim muông, hoa lá sống động." },
@@ -139,10 +136,8 @@ export const rawData = [
     { n: "Cà vạt thổ cẩm", p: "80.000 – 150.000 VNĐ", img: "https://thocamyhoa.vn/wp-content/uploads/2024/05/ca-vat-tho-cam28-800x1067.jpg", d: "Sự kết hợp giữa truyền thống và hiện đại. Họa tiết thổ cẩm Hrê tạo điểm nhấn độc đáo cho trang phục âu phục, mang bản sắc văn hóa vào đời sống đương đại." },
     { n: "Túi xách thổ cẩm", p: "100.000 – 300.000 VNĐ", img: "https://thocamyhoa.vn/wp-content/uploads/2024/12/tui-tho-cam10-768x594.jpg", d: "Chiếc túi nhỏ xinh dệt từ sợi bông tự nhiên, nhuộm màu rễ cây. Mỗi đường nét hoa văn là một câu chuyện về thiên nhiên núi rừng Quảng Ngãi." },
     { n: "Khăn choàng (K'tu)", p: "150.000 – 350.000 VNĐ", img: "https://tourdulichdaolyson.com/view/at_nghe-det-tho-cam-o-lang-teng-xu-quang_2460f08305a48abffeda3dc8728bae81.jpg", d: "Tấm khăn choàng ấm áp, che chở người Hrê qua mùa gió lạnh. Màu đỏ đen chủ đạo tượng trưng cho lửa và đất đai màu mỡ." },
-
     { n: "Váy (K'chiu) & Áo nữ", p: "800.000 – 2.000.000 VNĐ", img: "https://product.hstatic.net/200000774833/product/3eac7173-5f5a-4796-a097-43bfebe49236_b242f9852255488b94ce14e5b3d5e1e3.jpeg", d: "Bộ trang phục duyên dáng của phụ nữ Hrê. Sự phối màu tinh tế và kỹ thuật dệt điêu luyện tạo nên vẻ đẹp mặn mà, đằm thắm." }
   ]},
-  // ... (Các mục còn lại)
   { e: "KHÁNG", items: [
     { n: "Ống đựng xôi (Khẩu tuổng)", p: "Từ 80.000 VNĐ", img: "https://dacsanvungtaybac.org/wp-content/uploads/2025/08/dacsanvungtaybac-org-3.webp", d: "Hương nếp nương thơm lừng được ủ ấm trong chiếc 'Khẩu tuổng' đan bằng mây. Vật dụng giữ nhiệt tự nhiên, giữ trọn vị ngon của hạt ngọc trời." },
     { n: "Hòm mây", p: "Từ 350.000 VNĐ", img: "https://lh4.googleusercontent.com/proxy/tDxtMOtJ1c_gdEScZQnfzRrFmWmqzIJ7ger03DlfGhtjuh8X1t3Zt3P_nLbbrWLj89kFoQ9JTRabBItm219sdW3a0fjQLybkw1uJ29BTHv4JvUo2FlwKTqi96C2ifHG09yO0PrqvQyOQqI-suJJVcVmSINfg-kV-CXid4lOrFKb_Rh_1SEYgamvx", d: "Chiếc vali của người vùng cao. Hòm mây chắc chắn, kín đáo dùng để đựng quần áo, tư trang, theo chân người Kháng trong những chuyến đi xa." },
@@ -270,63 +265,66 @@ export const rawData = [
   ]}
 ];
 
-// ... (Giữ nguyên phần logic allProducts và ProductCard) ...
-// Re-calculate allProducts to ensure it uses the imported/defined rawData
+// Re-calculate allProducts an toàn, chống crash do undefined
 const allProducts: Product[] = rawData.flatMap((grp, grpIdx) => 
-  grp.items.map((item: any, idx) => {
+  (grp.items || []).map((item: any, idx) => {
     let priceNum = 0;
-    const priceMatch = item.p.match(/(\d+)\./);
-    if (priceMatch) priceNum = parseInt(priceMatch[1]) * 1000;
+    if (item?.p) {
+      const priceMatch = item.p.match(/(\d+)\./);
+      if (priceMatch) priceNum = parseInt(priceMatch[1]) * 1000;
+    }
     
     return {
       id: `${grp.e}-${idx}`,
-      ethnic: grp.e,
-      name: item.n,
-      price: item.p,
+      ethnic: grp?.e || 'Khác',
+      name: item?.n || 'Sản phẩm đang cập nhật',
+      price: item?.p || 'Liên hệ',
       priceValue: priceNum || 100000,
-      desc: item.d || `Sản phẩm ${item.n} là kết tinh văn hóa của dân tộc ${grp.e}.`,
-      artisan: "", 
+      desc: item?.d || `Sản phẩm là kết tinh văn hóa của dân tộc ${grp?.e || 'Việt Nam'}.`,
+      artisan: "Nghệ nhân bản địa", 
       exp: `${5 + Math.floor(Math.random() * 20)} năm nghề`,
       sold: Math.floor(Math.random() * 500) + 10,
       category: 'craft',
-      img: (item.img && item.img !== "gắn hình vào đây") ? item.img : getImageForProduct(item.n, grpIdx * 10 + idx)
+      img: (item?.img && item.img !== "gắn hình vào đây") ? item.img : getImageForProduct(item?.n || '', grpIdx * 10 + idx)
     };
   })
 );
 
+// Bọc thẻ ProductCard bằng onClick chung an toàn, ngừng sự kiện (e.stopPropagation) ở các nút bên trong
 const ProductCard = React.memo(({ product, onOpenDetail }: { product: Product, onOpenDetail: (p: Product) => void }) => (
-  <div className="group rounded-2xl md:rounded-[2.5rem] overflow-hidden transition-all duration-500 hover:shadow-[0_40px_80px_rgba(209,77,77,0.15)] hover:-translate-y-2 border border-gold/10 bg-white flex flex-col h-full">
-    <div className="relative h-40 md:h-72 overflow-hidden shrink-0 cursor-pointer bg-[#F9F7F2]" onClick={() => onOpenDetail(product)}>
+  <div className="group rounded-2xl md:rounded-[2.5rem] overflow-hidden transition-all duration-500 hover:shadow-[0_40px_80px_rgba(209,77,77,0.15)] hover:-translate-y-2 border border-gold/10 bg-white flex flex-col h-full cursor-pointer" onClick={() => onOpenDetail(product)}>
+    <div className="relative h-40 md:h-72 overflow-hidden shrink-0 bg-[#F9F7F2]">
       <img 
-        src={product.img} 
-        alt={product.name} 
+        src={product?.img || 'https://placehold.co/600x600?text=No+Image'} 
+        alt={product?.name || 'Sản phẩm'} 
         loading="lazy"
         className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" 
       />
       <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-primary/90 text-white text-[8px] md:text-[9px] font-black px-2 md:px-4 py-1 md:py-1.5 rounded-full uppercase tracking-widest backdrop-blur-sm border border-gold/30 shadow-md">
-        {product.ethnic}
+        {product?.ethnic || 'Khác'}
       </div>
       <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-         <span className="bg-white text-primary px-3 md:px-6 py-1.5 md:py-2.5 rounded-full font-black text-[10px] md:text-xs uppercase tracking-widest transform scale-90 group-hover:scale-100 transition-transform shadow-lg hidden md:block">Xem chi tiết</span>
+         <div className="bg-white text-primary px-3 md:px-6 py-1.5 md:py-2.5 rounded-full font-black text-[10px] md:text-xs uppercase tracking-widest transform scale-90 group-hover:scale-100 transition-transform shadow-lg hidden md:block">Xem chi tiết</div>
       </div>
     </div>
     <div className="p-3 md:p-6 text-left flex-grow flex flex-col">
-      <h3 className="text-sm md:text-lg font-black text-text-main tracking-tight mb-1 md:mb-2 group-hover:text-primary transition-colors cursor-pointer line-clamp-2 min-h-[2.5rem] md:min-h-[3.5rem]" onClick={() => onOpenDetail(product)}>{product.name}</h3>
+      <h3 className="text-sm md:text-lg font-black text-text-main tracking-tight mb-1 md:mb-2 group-hover:text-primary transition-colors line-clamp-2 min-h-[2.5rem] md:min-h-[3.5rem]">
+        {product?.name || 'Sản phẩm đang cập nhật'}
+      </h3>
       <div className="mt-auto pt-2 md:pt-4 border-t border-gold/5 space-y-2 md:space-y-4">
-        <div className="flex items-center justify-between"><span className="text-primary font-black text-sm md:text-lg">{product.price}</span></div>
+        <div className="flex items-center justify-between"><span className="text-primary font-black text-sm md:text-lg">{product?.price || 'Liên hệ'}</span></div>
         <div className="grid grid-cols-2 gap-2 md:gap-3">
-           <button onClick={() => onOpenDetail(product)} className="border border-gold/30 rounded-lg md:rounded-xl py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase text-text-soft hover:bg-gold/10 transition-colors">Tìm hiểu</button>
-           <button onClick={() => onOpenDetail(product)} className="bg-primary rounded-lg md:rounded-xl py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase text-white hover:brightness-110 shadow-lg shadow-primary/20 transition-all active:scale-95">Đặt mua</button>
+           <button onClick={(e) => { e.stopPropagation(); onOpenDetail(product); }} className="border border-gold/30 rounded-lg md:rounded-xl py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase text-text-soft hover:bg-gold/10 transition-colors z-10">Tìm hiểu</button>
+           <button onClick={(e) => { e.stopPropagation(); onOpenDetail(product); }} className="bg-primary rounded-lg md:rounded-xl py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase text-white hover:brightness-110 shadow-lg shadow-primary/20 transition-all active:scale-95 z-10">Đặt mua</button>
         </div>
       </div>
     </div>
   </div>
 ));
 
-// --- MODAL ĐÃ TỐI ƯU ---
 const ProductModal = ({ product, onClose }: { product: Product, onClose: () => void }) => {
   const [quantity, setQuantity] = useState(1);
-  const { addToCart, toggleCart } = useCart();
+  const { addToCart, toggleCart } = useCart() || {}; // Thêm an toàn Context
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -334,25 +332,28 @@ const ProductModal = ({ product, onClose }: { product: Product, onClose: () => v
   }, []);
 
   const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) addToCart(product);
+    if (addToCart && product) {
+        for (let i = 0; i < quantity; i++) addToCart(product);
+    }
     onClose();
   };
 
   const handleBuyNow = () => {
-    for (let i = 0; i < quantity; i++) addToCart(product);
+    if (addToCart && product) {
+        for (let i = 0; i < quantity; i++) addToCart(product);
+    }
     onClose();
-    toggleCart(); 
+    if (toggleCart) toggleCart(); 
   };
+
+  if (!product) return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 font-display">
-      {/* Backdrop tối để tập trung sự chú ý */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose}></div>
       
-      {/* Modal Container: KHÔNG full màn hình, có margin, bo góc lớn */}
       <div className="bg-white w-full max-w-5xl h-[85vh] md:h-auto md:max-h-[90vh] rounded-[2rem] shadow-2xl relative z-10 animate-slide-up flex flex-col md:flex-row overflow-hidden border-4 border-gold/30">
         
-        {/* Nút Đóng TO RÕ RÀNG */}
         <button 
           onClick={onClose} 
           className="absolute top-4 right-4 z-50 bg-white/80 hover:bg-white text-text-soft hover:text-red-600 p-2 rounded-full shadow-lg backdrop-blur-sm transition-all active:scale-95 border border-gold/10 group"
@@ -360,22 +361,20 @@ const ProductModal = ({ product, onClose }: { product: Product, onClose: () => v
           <span className="material-symbols-outlined text-xl group-hover:rotate-90 transition-transform">close</span>
         </button>
 
-        {/* Cột Ảnh */}
         <div className="w-full md:w-[60%] h-1/2 md:h-auto relative bg-[#F2EFE6] border-b md:border-b-0 md:border-r border-gold/10">
-          <img src={product.img} alt={product.name} className="w-full h-full object-cover" />
+          <img src={product.img || 'https://placehold.co/600x600?text=No+Image'} alt={product.name || 'Sản phẩm'} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
           <div className="absolute bottom-4 left-4 text-white">
-             <span className="bg-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/30 shadow-sm inline-block mb-2">Dân tộc {product.ethnic}</span>
+             <span className="bg-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/30 shadow-sm inline-block mb-2">Dân tộc {product.ethnic || 'Khác'}</span>
           </div>
         </div>
 
-        {/* Cột Thông tin: Có thanh cuộn */}
         <div className="w-full md:w-[40%] h-1/2 md:h-auto flex flex-col bg-white">
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
-             <h2 className="text-2xl md:text-3xl font-black text-text-main leading-tight mb-2 mt-2">{product.name}</h2>
+             <h2 className="text-2xl md:text-3xl font-black text-text-main leading-tight mb-2 mt-2">{product.name || 'Sản phẩm đang cập nhật'}</h2>
              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gold/10">
-                <span className="text-xl md:text-2xl font-black text-primary">{product.price}</span>
-                <span className="text-xs text-text-soft font-bold bg-gold/10 px-2 py-1 rounded">Đã bán: {product.sold}</span>
+                <span className="text-xl md:text-2xl font-black text-primary">{product.price || 'Liên hệ'}</span>
+                <span className="text-xs text-text-soft font-bold bg-gold/10 px-2 py-1 rounded">Đã bán: {product.sold || 0}</span>
              </div>
              
              <div className="space-y-4">
@@ -384,23 +383,22 @@ const ProductModal = ({ product, onClose }: { product: Product, onClose: () => v
                    <span className="material-symbols-outlined text-base">auto_stories</span>
                    Câu chuyện sản phẩm
                  </h4>
-                 <p className="text-text-main text-sm leading-relaxed text-justify font-medium">"{product.desc}"</p>
+                 <p className="text-text-main text-sm leading-relaxed text-justify font-medium">"{product.desc || 'Chưa có mô tả chi tiết cho sản phẩm này.'}"</p>
                </div>
                
                <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 border border-gold/10 rounded-xl bg-white text-center">
                     <p className="text-[9px] uppercase text-bronze font-bold mb-1">Nghệ nhân</p>
-                    <p className="text-xs font-black text-text-main">Bản địa</p>
+                    <p className="text-xs font-black text-text-main">{product.artisan || 'Bản địa'}</p>
                   </div>
                   <div className="p-3 border border-gold/10 rounded-xl bg-white text-center">
                     <p className="text-[9px] uppercase text-bronze font-bold mb-1">Kinh nghiệm</p>
-                    <p className="text-xs font-black text-text-main">{product.exp}</p>
+                    <p className="text-xs font-black text-text-main">{product.exp || 'Lâu năm'}</p>
                   </div>
                </div>
              </div>
           </div>
 
-          {/* Footer Modal */}
           <div className="p-4 bg-white border-t border-gold/10 shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
              <div className="flex items-center justify-between mb-3 bg-background-light p-2 rounded-xl border border-gold/10">
                 <span className="text-xs font-bold text-text-soft ml-2">Số lượng:</span>
@@ -429,7 +427,6 @@ const ProductModal = ({ product, onClose }: { product: Product, onClose: () => v
   );
 };
 
-// ... (Phần Main Component Marketplace giữ nguyên logic, chỉ thay thế ProductModal mới) ...
 const Marketplace: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialEthnic = (searchParams.get('ethnic') || 'TẤT CẢ').toUpperCase();
@@ -437,7 +434,7 @@ const Marketplace: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [products, setProducts] = useState<Product[]>(allProducts); // Initialize with fallback data
+  const [products, setProducts] = useState<Product[]>(allProducts);
   const scrollRef = useRef<HTMLDivElement>(null);
   const ITEMS_PER_PAGE = 12;
 
@@ -446,46 +443,46 @@ const Marketplace: React.FC = () => {
       try {
         let dbProducts = await productService.getAllProducts();
         
-        // TỰ ĐỘNG NẠP DỮ LIỆU NẾU DB TRỐNG (Theo yêu cầu người dùng)
         if (!dbProducts || dbProducts.length === 0) {
           console.log("Dữ liệu trống. Đang tự động nạp dữ liệu mẫu...");
           const allItems: any[] = [];
           rawData.forEach(group => {
-            group.items.forEach(item => {
-              // Chuyển đổi giá từ chuỗi sang số (ước lượng)
+            (group.items || []).forEach(item => {
               let priceNum = 0;
-              const priceMatch = item.p.match(/(\d+)\./); // Lấy số đầu tiên tìm thấy
-              if (priceMatch) priceNum = parseInt(priceMatch[1]) * 1000;
+              if (item?.p) {
+                 const priceMatch = item.p.match(/(\d+)\./);
+                 if (priceMatch) priceNum = parseInt(priceMatch[1]) * 1000;
+              }
 
               allItems.push({
-                name: item.n,
-                ethnic: group.e,
+                name: item?.n || 'Sản phẩm',
+                ethnic: group?.e || 'Khác',
                 price: priceNum || 100000, 
-                price_display: item.p,
-                description: item.d,
-                image: item.img,
+                price_display: item?.p || 'Liên hệ',
+                description: item?.d || 'Chưa có mô tả',
+                image: item?.img || '',
                 category: 'Thủ công'
               });
             });
           });
           
           await productService.seedProducts(allItems);
-          dbProducts = await productService.getAllProducts(); // Tải lại sau khi nạp
+          dbProducts = await productService.getAllProducts(); 
         }
 
         if (dbProducts && dbProducts.length > 0) {
           const mappedProducts: Product[] = dbProducts.map(p => ({
-            id: p.id,
-            name: p.name,
-            ethnic: p.ethnic,
-            price: p.price_display || `${p.price.toLocaleString('vi-VN')} VNĐ`,
-            priceValue: p.price,
-            desc: p.description,
+            id: p?.id || Math.random().toString(),
+            name: p?.name || 'Sản phẩm đang cập nhật',
+            ethnic: p?.ethnic || 'Khác',
+            price: p?.price_display || (p?.price ? `${p.price.toLocaleString('vi-VN')} VNĐ` : 'Liên hệ'),
+            priceValue: p?.price || 0,
+            desc: p?.description || 'Sản phẩm mang dấu ấn văn hóa.',
             artisan: "Nghệ nhân bản địa",
             exp: "Lâu năm",
-            img: p.image,
+            img: p?.image || 'https://placehold.co/600x600?text=No+Image',
             sold: Math.floor(Math.random() * 100),
-            category: p.category
+            category: p?.category || 'Thủ công'
           }));
           setProducts(mappedProducts);
         }
@@ -503,22 +500,26 @@ const Marketplace: React.FC = () => {
   }, [setSearchParams]);
 
   const ethnicList = useMemo(() => {
-    const list = Array.from(new Set(products.map(p => p.ethnic)));
+    const list = Array.from(new Set(products.map(p => p?.ethnic || 'Khác')));
     return ['TẤT CẢ', ...list.sort((a, b) => a.localeCompare(b, 'vi'))];
   }, [products]);
 
   const filteredProducts = useMemo(() => {
     let result = products;
-    if (selectedEthnic !== 'TẤT CẢ') result = result.filter(p => p.ethnic === selectedEthnic);
+    if (selectedEthnic !== 'TẤT CẢ') result = result.filter(p => p?.ethnic === selectedEthnic);
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(p => p.name.toLowerCase().includes(term) || p.ethnic.toLowerCase().includes(term));
+      result = result.filter(p => 
+        (p?.name || '').toLowerCase().includes(term) || 
+        (p?.ethnic || '').toLowerCase().includes(term)
+      );
     }
     return result;
-  }, [selectedEthnic, searchTerm]);
+  }, [selectedEthnic, searchTerm, products]);
 
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil((filteredProducts?.length || 0) / ITEMS_PER_PAGE);
   const currentProducts = useMemo(() => {
+    if (!filteredProducts) return [];
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredProducts, currentPage]);
@@ -528,17 +529,8 @@ const Marketplace: React.FC = () => {
     window.scrollTo({ top: 400, behavior: 'smooth' });
   };
 
-  const scrollLeft = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: 200, behavior: 'smooth' });
-    }
-  };
+  const scrollLeft = () => scrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' });
+  const scrollRight = () => scrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' });
 
   return (
     <div className="min-h-screen font-display bg-background-light relative overflow-x-hidden">
@@ -554,10 +546,10 @@ const Marketplace: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/40 to-transparent"></div>
           </div>
           <div className="relative z-10 px-6 md:px-16 max-w-3xl text-left">
-            <h2 className="text-3xl md:text-5xl lg:text-7xl font-black text-white mb-2 md:mb-4 italic uppercase tracking-tighter drop-shadow-2xl">CHỢ <span className="text-gold">PHIÊN</span></h2>
+            <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-7xl font-black text-white mb-2 md:mb-4 italic uppercase tracking-tighter drop-shadow-2xl">CHỢ <span className="text-gold">PHIÊN</span></h2>
             <div className="flex items-start gap-4">
                <div className="w-1 md:w-1.5 h-8 md:h-12 bg-gold/80 rounded-full mt-1 shrink-0"></div>
-               <p className="text-white text-xs md:text-xl lg:text-2xl font-bold italic tracking-tight opacity-90 drop-shadow-md leading-tight">"Kết nối di sản với thương mại công bằng cho các nghệ nhân dân tộc thiểu số vùng cao Việt Nam."</p>
+               <p className="text-white text-xs sm:text-sm md:text-xl lg:text-2xl font-bold italic tracking-tight opacity-90 drop-shadow-md leading-tight">"Kết nối di sản với thương mại công bằng cho các nghệ nhân dân tộc thiểu số vùng cao Việt Nam."</p>
             </div>
           </div>
         </section>
@@ -568,9 +560,7 @@ const Marketplace: React.FC = () => {
             <span className="material-symbols-outlined absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-gold text-xl md:text-2xl">search</span>
           </div>
           
-          {/* Bộ lọc dân tộc với nút điều hướng */}
           <div className="bg-white/90 backdrop-blur p-2 rounded-2xl md:rounded-[2.5rem] border border-gold/20 shadow-lg flex items-center max-w-[95vw] md:max-w-[90vw] mx-auto group">
-             {/* Nút Trái */}
              <button onClick={scrollLeft} className="p-2 hover:bg-gold/10 rounded-full text-gold transition-colors shrink-0" aria-label="Cuộn trái">
                 <span className="material-symbols-outlined">chevron_left</span>
              </button>
@@ -586,7 +576,6 @@ const Marketplace: React.FC = () => {
                 ))}
              </div>
 
-             {/* Nút Phải */}
              <button onClick={scrollRight} className="p-2 hover:bg-gold/10 rounded-full text-gold transition-colors shrink-0" aria-label="Cuộn phải">
                 <span className="material-symbols-outlined">chevron_right</span>
              </button>
@@ -596,13 +585,13 @@ const Marketplace: React.FC = () => {
         <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center justify-between px-2 md:px-4 gap-4">
            <div className="flex items-center gap-3">
               <h3 className="text-lg md:text-2xl font-black text-text-main uppercase tracking-tighter italic">{selectedEthnic === 'TẤT CẢ' ? 'Toàn bộ di sản' : `Dân tộc ${selectedEthnic}`}</h3>
-              <span className="bg-gold/20 text-text-main text-[10px] font-black px-2 py-0.5 rounded-md">{filteredProducts.length}</span>
+              <span className="bg-gold/20 text-text-main text-[10px] font-black px-2 py-0.5 rounded-md">{filteredProducts.length || 0}</span>
            </div>
            <div className="text-[10px] md:text-xs font-bold text-bronze uppercase tracking-widest">Trang {currentPage} / {totalPages > 0 ? totalPages : 1}</div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6 lg:gap-8 min-h-[600px] content-start">
-          {currentProducts.map((p) => <ProductCard key={p.id} product={p} onOpenDetail={setSelectedProduct} />)}
+          {currentProducts.map((p) => <ProductCard key={p?.id || Math.random().toString()} product={p} onOpenDetail={setSelectedProduct} />)}
         </div>
         
         {currentProducts.length === 0 && (

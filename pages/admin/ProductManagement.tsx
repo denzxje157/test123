@@ -22,7 +22,7 @@ const ProductManagement: React.FC = () => {
     setIsLoading(true);
     try {
       const data = await productService.getAllProducts();
-      setProducts(data);
+      setProducts(data || []);
     } catch (error) {
       console.error('Lỗi tải sản phẩm:', error);
     }
@@ -37,19 +37,20 @@ const ProductManagement: React.FC = () => {
     try {
       const allItems: any[] = [];
       rawData.forEach(group => {
-        group.items.forEach(item => {
-          // Chuyển đổi giá từ chuỗi sang số (ước lượng)
+        (group.items || []).forEach(item => {
           let priceNum = 0;
-          const priceMatch = item.p.match(/(\d+)\./); // Lấy số đầu tiên tìm thấy
-          if (priceMatch) priceNum = parseInt(priceMatch[1]) * 1000;
+          if (item?.p) {
+             const priceMatch = item.p.match(/(\d+)\./);
+             if (priceMatch) priceNum = parseInt(priceMatch[1]) * 1000;
+          }
 
           allItems.push({
-            name: item.n,
-            ethnic: group.e,
-            price: priceNum || 100000, // Mặc định nếu không parse được
-            price_display: item.p,
-            description: item.d,
-            image: item.img,
+            name: item?.n || 'Sản phẩm',
+            ethnic: group?.e || 'Khác',
+            price: priceNum || 100000, 
+            price_display: item?.p || 'Liên hệ',
+            description: item?.d || 'Chưa có mô tả',
+            image: item?.img || '',
             category: 'Thủ công'
           });
         });
@@ -100,54 +101,64 @@ const ProductManagement: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 gap-4 animate-fade-in">
         <div>
-          <h1 className="text-3xl font-black text-gray-800">Quản lý Sản phẩm</h1>
-          <p className="text-gray-500 mt-1">Tổng số: {products.length} sản phẩm</p>
+          <h1 className="text-2xl md:text-3xl font-black text-text-main uppercase tracking-tight">Quản lý Sản phẩm</h1>
+          <p className="text-text-soft mt-1 font-medium text-sm md:text-base">Tổng số: <span className="text-primary font-black">{products.length}</span> sản phẩm</p>
         </div>
-        <div className="flex gap-3">
-          <button onClick={handleSeedData} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300 transition-colors text-sm">
-            <span className="material-symbols-outlined align-middle mr-1 text-lg">database</span>
-            Nạp dữ liệu mẫu
+        <div className="flex gap-2 md:gap-3 w-full md:w-auto">
+          <button onClick={handleSeedData} className="flex-1 md:flex-none px-3 md:px-4 py-2.5 md:py-2 bg-white border border-gold/20 text-text-main rounded-xl font-bold hover:bg-background-light transition-colors text-xs flex items-center justify-center gap-1 shadow-sm">
+            <span className="material-symbols-outlined text-lg">database</span>
+            <span className="hidden sm:inline">Nạp dữ liệu mẫu</span>
+            <span className="sm:hidden">Nạp mẫu</span>
           </button>
-          <button onClick={() => { setEditingProduct(null); setFormData({}); setIsModalOpen(true); }} className="px-6 py-2 bg-primary text-white rounded-lg font-bold hover:brightness-110 transition-colors shadow-lg flex items-center gap-2">
-            <span className="material-symbols-outlined">add</span>
+          <button onClick={() => { setEditingProduct(null); setFormData({ name: '', ethnic: '', price: 0, description: '', image: '', category: 'Thủ công' }); setIsModalOpen(true); }} className="flex-1 md:flex-none px-4 md:px-6 py-2.5 md:py-2 bg-primary text-white rounded-xl font-bold uppercase tracking-widest text-[10px] md:text-xs hover:brightness-110 transition-colors shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95">
+            <span className="material-symbols-outlined text-base md:text-lg">add</span>
             Thêm mới
           </button>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold">
+      <div className="bg-white rounded-2xl shadow-sm border border-gold/10 overflow-hidden animate-slide-up">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left border-collapse min-w-[600px]">
+            <thead className="bg-background-light text-text-soft text-xs uppercase font-black tracking-wider">
               <tr>
-                <th className="p-4">Hình ảnh</th>
-                <th className="p-4">Tên sản phẩm</th>
-                <th className="p-4">Dân tộc</th>
-                <th className="p-4">Giá (VNĐ)</th>
-                <th className="p-4 text-center">Thao tác</th>
+                <th className="p-4 whitespace-nowrap">Hình ảnh</th>
+                <th className="p-4 whitespace-nowrap">Tên sản phẩm</th>
+                <th className="p-4 whitespace-nowrap">Dân tộc</th>
+                <th className="p-4 whitespace-nowrap">Giá (VNĐ)</th>
+                <th className="p-4 text-center whitespace-nowrap">Thao tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gold/10">
               {isLoading ? (
-                <tr><td colSpan={5} className="p-8 text-center text-gray-500">Đang tải dữ liệu...</td></tr>
+                <tr><td colSpan={5} className="p-8 text-center text-text-soft font-bold">Đang tải dữ liệu...</td></tr>
               ) : products.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-center text-gray-500">Chưa có sản phẩm nào. Hãy nạp dữ liệu mẫu.</td></tr>
+                <tr>
+                   <td colSpan={5} className="p-12 text-center text-text-soft">
+                      <span className="material-symbols-outlined text-4xl text-gold/30 mb-2 block">inventory_2</span>
+                      <p className="font-bold">Chưa có sản phẩm nào. Hãy nạp dữ liệu mẫu.</p>
+                   </td>
+                </tr>
               ) : (
                 products.map(product => (
-                  <tr key={product.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-4">
-                      <img src={product.image} alt={product.name} className="size-12 rounded-lg object-cover border border-gray-200" />
+                  <tr key={product.id} className="hover:bg-background-light transition-colors group">
+                    <td className="p-4 w-20">
+                      <img src={product?.image || 'https://placehold.co/100'} alt={product?.name || 'Item'} className="size-12 rounded-xl object-cover border border-gold/20 shadow-sm" />
                     </td>
-                    <td className="p-4 font-bold text-gray-800">{product.name}</td>
-                    <td className="p-4"><span className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs font-bold uppercase">{product.ethnic}</span></td>
-                    <td className="p-4 font-mono text-primary font-bold">{product.price?.toLocaleString()} đ</td>
+                    <td className="p-4 font-bold text-text-main max-w-[200px] truncate">{product?.name || 'Chưa cập nhật'}</td>
+                    <td className="p-4">
+                       <span className="px-3 py-1 bg-gold/10 border border-gold/20 text-gold-dark rounded-md text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
+                          {product?.ethnic || 'Khác'}
+                       </span>
+                    </td>
+                    <td className="p-4 font-black text-primary whitespace-nowrap">{(Number(product?.price) || 0).toLocaleString('vi-VN')} đ</td>
                     <td className="p-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button onClick={() => openEdit(product)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><span className="material-symbols-outlined text-xl">edit</span></button>
-                        <button onClick={() => handleDelete(product.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><span className="material-symbols-outlined text-xl">delete</span></button>
+                      <div className="flex items-center justify-center gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => openEdit(product)} className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-100"><span className="material-symbols-outlined text-lg">edit</span></button>
+                        <button onClick={() => handleDelete(product.id)} className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-100"><span className="material-symbols-outlined text-lg">delete</span></button>
                       </div>
                     </td>
                   </tr>
@@ -160,45 +171,70 @@ const ProductManagement: React.FC = () => {
 
       {/* Modal Thêm/Sửa */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scale-up">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="text-xl font-black text-gray-800">{editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-red-500"><span className="material-symbols-outlined">close</span></button>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 font-display">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scale-up relative z-10 max-h-[90vh] flex flex-col border-4 border-gold/20">
+            <div className="p-5 md:p-6 border-b border-gold/10 flex justify-between items-center bg-background-light shrink-0">
+              <h2 className="text-lg md:text-xl font-black text-text-main uppercase tracking-tight">{editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-text-soft hover:text-red-500 bg-white size-8 flex items-center justify-center rounded-full shadow-sm border border-gold/10 transition-colors"><span className="material-symbols-outlined text-xl">close</span></button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            
+            <form onSubmit={handleSubmit} className="p-5 md:p-6 space-y-4 md:space-y-5 overflow-y-auto custom-scrollbar flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tên sản phẩm</label>
-                  <input required type="text" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-primary outline-none" />
+                  <label className="block text-[10px] font-black text-text-soft uppercase tracking-widest mb-1.5">Tên sản phẩm</label>
+                  <input required type="text" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border border-gold/20 bg-white rounded-xl p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-bold text-text-main transition-all shadow-sm" placeholder="Nhập tên..." />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Dân tộc</label>
-                  <input required type="text" value={formData.ethnic || ''} onChange={e => setFormData({...formData, ethnic: e.target.value})} className="w-full border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-primary outline-none" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Giá (VNĐ)</label>
-                  <input required type="number" value={formData.price || 0} onChange={e => setFormData({...formData, price: Number(e.target.value)})} className="w-full border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-primary outline-none" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Link Ảnh</label>
-                  <input required type="text" value={formData.image || ''} onChange={e => setFormData({...formData, image: e.target.value})} className="w-full border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-primary outline-none" />
+                  <label className="block text-[10px] font-black text-text-soft uppercase tracking-widest mb-1.5">Dân tộc</label>
+                  <input required type="text" value={formData.ethnic || ''} onChange={e => setFormData({...formData, ethnic: e.target.value})} className="w-full border border-gold/20 bg-white rounded-xl p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-bold text-text-main transition-all shadow-sm" placeholder="VD: Mông, Thái..." />
                 </div>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
+                <div>
+                  <label className="block text-[10px] font-black text-text-soft uppercase tracking-widest mb-1.5">Giá (VNĐ)</label>
+                  <input required type="number" value={formData.price || 0} onChange={e => setFormData({...formData, price: Number(e.target.value)})} className="w-full border border-gold/20 bg-white rounded-xl p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-black text-primary transition-all shadow-sm" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-text-soft uppercase tracking-widest mb-1.5">Link Ảnh (URL)</label>
+                  <input required type="text" value={formData.image || ''} onChange={e => setFormData({...formData, image: e.target.value})} className="w-full border border-gold/20 bg-white rounded-xl p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-medium text-text-main transition-all shadow-sm" placeholder="https://..." />
+                </div>
+              </div>
+              
+              {/* Preview Ảnh Nhỏ */}
+              {formData.image && (
+                <div className="mt-2 h-24 sm:h-32 w-full rounded-xl border border-gold/20 overflow-hidden bg-background-light">
+                   <img src={formData.image} alt="Preview" className="w-full h-full object-contain" onError={(e) => (e.currentTarget.src = 'https://placehold.co/400x200?text=L%E1%BB%97i+%E1%BA%A3nh')} />
+                </div>
+              )}
+
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Mô tả</label>
-                <textarea rows={4} value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-primary outline-none"></textarea>
-              </div>
-              <div className="pt-4 flex justify-end gap-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 bg-gray-100 text-gray-600 font-bold rounded-lg hover:bg-gray-200">Hủy</button>
-                <button type="submit" className="px-6 py-2 bg-primary text-white font-bold rounded-lg hover:brightness-110 shadow-lg">Lưu sản phẩm</button>
+                <label className="block text-[10px] font-black text-text-soft uppercase tracking-widest mb-1.5">Câu chuyện / Mô tả</label>
+                <textarea rows={4} value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full border border-gold/20 bg-white rounded-xl p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-medium text-text-main transition-all shadow-sm resize-none"></textarea>
               </div>
             </form>
+
+            <div className="p-5 md:p-6 border-t border-gold/10 bg-white shrink-0 flex justify-end gap-3 shadow-[0_-5px_15px_rgba(0,0,0,0.02)]">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 border border-gold/20 text-text-main font-bold rounded-xl hover:bg-background-light transition-colors text-xs uppercase tracking-widest">Hủy</button>
+                <button type="submit" className="px-6 py-3 bg-primary text-white font-black rounded-xl hover:brightness-110 shadow-lg shadow-primary/20 transition-all active:scale-95 text-xs uppercase tracking-widest flex items-center gap-2">
+                   <span className="material-symbols-outlined text-base">save</span>
+                   Lưu sản phẩm
+                </button>
+            </div>
           </div>
         </div>
       )}
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d4af37; border-radius: 10px; }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
+        .animate-scale-up { animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+      `}</style>
     </AdminLayout>
   );
 };
