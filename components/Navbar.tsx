@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import AIChatWidget from './AIChatWidget.tsx';
-import { User, LogOut, UserCircle2, ShoppingBag, MessageSquare } from 'lucide-react';
+import { User, LogOut, UserCircle2, ShoppingBag, MessageSquare, ShieldCheck } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -62,6 +61,17 @@ const Navbar: React.FC = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-3 md:gap-4">
+            {/* NÚT ADMIN TRỰC TIẾP (MỚI - Chỉ hiện cho Admin) */}
+            {user?.role === 'admin' && (
+              <Link 
+                to="/admin/dashboard"
+                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-black text-gold rounded-full border border-gold/30 hover:bg-zinc-900 transition-all shadow-lg active:scale-95"
+              >
+                <ShieldCheck size={16} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Quản trị</span>
+              </Link>
+            )}
+
             {/* AI Discovery Button (Desktop) */}
             <button 
               onClick={() => setIsChatOpen(!isChatOpen)}
@@ -117,20 +127,24 @@ const Navbar: React.FC = () => {
                   <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-gold/20 overflow-hidden z-[100] animate-fade-in-up origin-top-right">
                     <div className="p-4 border-b border-gold/10 bg-background-light">
                       <p className="text-sm font-black text-text-main truncate">{user.fullName}</p>
-                      <p className="text-[10px] text-text-soft truncate">{user.email}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[10px] text-text-soft truncate">{user.email}</p>
+                        {user.role === 'admin' && <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-black uppercase">Admin</span>}
+                      </div>
                     </div>
                     <div className="p-2">
-                      <Link to="/profile" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-main hover:bg-gold/10 rounded-xl transition-colors">
-                        <User size={16} /> Hồ sơ cá nhân
-                      </Link>
-                      <Link to="/orders" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-main hover:bg-gold/10 rounded-xl transition-colors">
-                        <span className="material-symbols-outlined text-base">receipt_long</span> Đơn hàng của tôi
-                      </Link>
+                      {/* Bổ sung nút Admin trong mobile/dropdown cho chắc chắn */}
                       {user.role === 'admin' && (
-                        <Link to="/admin/dashboard" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-main hover:bg-gold/10 rounded-xl transition-colors">
-                          <span className="material-symbols-outlined text-base">dashboard</span> Trang quản trị
+                        <Link to="/admin/dashboard" className="flex items-center gap-3 px-3 py-2 text-sm font-bold text-primary hover:bg-primary/5 rounded-xl transition-colors" onClick={() => setIsUserMenuOpen(false)}>
+                          <ShieldCheck size={16} /> Trang quản trị
                         </Link>
                       )}
+                      <Link to="/profile" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-main hover:bg-gold/10 rounded-xl transition-colors" onClick={() => setIsUserMenuOpen(false)}>
+                        <User size={16} /> Hồ sơ cá nhân
+                      </Link>
+                      <Link to="/orders" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-main hover:bg-gold/10 rounded-xl transition-colors" onClick={() => setIsUserMenuOpen(false)}>
+                        <span className="material-symbols-outlined text-base">receipt_long</span> Đơn hàng của tôi
+                      </Link>
                       <div className="h-px bg-gold/10 my-1"></div>
                       <button 
                         onClick={() => { logout(); setIsUserMenuOpen(false); }}
@@ -159,6 +173,20 @@ const Navbar: React.FC = () => {
         {/* Mobile Nav Menu */}
         {isMenuOpen && (
           <div className="lg:hidden bg-background-light border-t border-gold/20 p-6 flex flex-col gap-4 animate-fade-in absolute w-full shadow-2xl h-[calc(100vh-70px)] top-full z-[90] overflow-y-auto">
+            {/* Nút Admin trên Mobile */}
+            {user?.role === 'admin' && (
+              <Link
+                to="/admin/dashboard"
+                onClick={() => setIsMenuOpen(false)}
+                className="bg-black text-gold p-4 rounded-2xl flex items-center justify-between shadow-lg"
+              >
+                <div className="flex items-center gap-3 font-black uppercase tracking-widest text-xs">
+                  <ShieldCheck size={20} /> TRANG QUẢN TRỊ
+                </div>
+                <span className="material-symbols-outlined">arrow_forward</span>
+              </Link>
+            )}
+            
             {navLinks.map((link) => (
               <Link
                 key={link.path}
