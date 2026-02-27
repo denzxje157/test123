@@ -1,49 +1,51 @@
-// api/webhook.js
-import { createClient } from '@supabase/supabase-js';
+// Dùng require thay vì import để chống lỗi biên dịch trên Vercel
+const { createClient } = require('@supabase/supabase-js');
 
-// Kết nối Supabase bằng Service Role Key (quyền Admin)
-const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-
-export default async function handler(req, res) {
-  // Bỏ qua các request không phải POST
-  if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
+module.exports = async function (req, res) {
+  // Chỉ nhận POST
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Chỉ nhận POST request' });
+  }
 
   try {
-    // 1. Lấy dữ liệu theo ĐÚNG định dạng của SePay
-    const { content, transferAmount, transferType } = req.body; 
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
-    // Chỉ xử lý giao dịch tiền VÀO (in), bỏ qua tiền RA (out)
-    if (transferType !== 'in') {
-        return res.status(200).json({ message: 'Bỏ qua giao dịch chuyển tiền ra' });
+    // Bắt lỗi ngay nếu thiếu biến môi trường
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(500).json({ error: 'Vercel đang thiếu biến môi trường Supabase' });
     }
 
-    // 2. Dùng Regex để tìm Mã Đơn Hàng trong nội dung (Bắt chữ SN- kèm 6 số, không phân biệt hoa thường)
-    const orderMatch = content.match(/(SN-?\d{6})/i);
-    if (!orderMatch) {
-      return res.status(200).json({ message: 'Không tìm thấy mã đơn hàng Sắc Việt trong nội dung' });
-    }
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const data = req.body;
     
-    // Chuẩn hóa mã đơn hàng (ví dụ: khách ghi sn601810 -> đổi thành SN-601810)
-    let orderId = orderMatch[0].toUpperCase();
-    if (!orderId.includes('-')) orderId = orderId.replace('SN', 'SN-');
+    const content = data.content || data.transactionContent || data.description || '';
+    const type = data.transferType;
 
-    // 3. Tìm đơn hàng trong Supabase
+    if (type && type !== 'in') {
+      return res.status(200).json({ message: 'Bỏ qua giao dịch rút tiền' });
+    }
+
+    const orderMatch = content.match(/SN-?\d{6}/i);
+    if (!orderMatch) {
+      return res.status(200).json({ message: 'Không tìm thấy mã đơn hàng Sắc Việt' });
+    }
+
+    let orderId = orderMatch[0].toUpperCase();
+    if (!orderId.includes('-')) {
+        orderId = orderId.replace('SN', 'SN-');
+    }
+
     const { data: order, error: fetchError } = await supabase
       .from('orders')
       .select('*')
       .eq('order_id', orderId)
       .single();
 
-    if (fetchError || !order) return res.status(404).json({ message: 'Đơn hàng không tồn tại' });
-
-    // (Tùy chọn) Kiểm tra số tiền chuyển có đủ không
-    // Nếu khách chuyển thiếu, bạn có thể gửi cảnh báo hoặc vẫn duyệt (tùy logic shop)
-    if (transferAmount < order.total) {
-      console.log(`Đơn ${orderId} chuyển thiếu tiền: Yêu cầu ${order.total}, Thực nhận ${transferAmount}`);
-      // Ở đây tạm thời vẫn duyệt, bạn có thể đổi logic nếu muốn
+    if (fetchError || !order) {
+      return res.status(200).json({ message: `Đơn hàng ${orderId} không tồn tại` });
     }
 
-    // 4. Cập nhật trạng thái thành ĐÃ THANH TOÁN ('paid')
     const { error: updateError } = await supabase
       .from('orders')
       .update({ status: 'paid' })
@@ -51,11 +53,10 @@ export default async function handler(req, res) {
 
     if (updateError) throw updateError;
 
-    // Trả về 200 OK để SePay biết đã nhận tin thành công
-    return res.status(200).json({ success: true, message: 'Đã duyệt đơn tự động!' });
+    return res.status(200).json({ success: true, message: `Đã duyệt đơn ${orderId} thành công!` });
 
   } catch (error) {
-    console.error('Webhook Error:', error);
-    return res.status(500).json({ error: error.message });
+    console.error('Lỗi Webhook:', error);
+    return res.status(500).json({ error: error.message || 'Lỗi không xác định' });
   }
-}
+};
