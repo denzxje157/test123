@@ -31,9 +31,13 @@ const getDanTocId = async (tenDanToc: string) => {
 };
 
 export const contentService = {
-  // Lấy dữ liệu Thư viện trực tiếp từ Supabase
   getLibraryItems: async (): Promise<LibraryItem[]> => {
-    if (!isSupabaseConfigured) return [];
+    // 💡 MÁY SOI 1: Báo hiệu bắt đầu chạy
+    console.log("🚀 [Máy soi] BẮT ĐẦU VÀO DATABASE LẤY THƯ VIỆN...");
+    if (!isSupabaseConfigured) {
+        console.warn("⚠️ Supabase chưa cấu hình!");
+        return [];
+    }
     
     try {
         const { data, error } = await supabase
@@ -41,21 +45,37 @@ export const contentService = {
           .select('*, dan_toc(ten_dan_toc)')
           .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+            console.error("❌ Lỗi Database:", error);
+            throw error;
+        }
         
-        return (data || []).map(item => ({
+        // 💡 MÁY SOI 2: Hiển thị những gì Supabase trả về
+        console.log("✅ Dữ liệu thô từ Database:", data);
+
+        const mapped = (data || []).map(item => {
+           let cat = String(item.danh_muc || '').toLowerCase().trim();
+           let finalCat = 'architecture';
+           if (cat.includes('ritual') || cat === 'nghi lễ') finalCat = 'ritual';
+           if (cat.includes('festival') || cat === 'lễ hội') finalCat = 'festival';
+
+           return {
               id: item.id,
-              // Lấy thẳng danh mục (architecture, ritual, festival) từ DB
-              category: item.danh_muc || 'architecture', 
+              category: finalCat,
               ethnic: item.dan_toc?.ten_dan_toc || 'Khác',
               title: item.tieu_de || 'Chưa có tiêu đề',
               desc: item.mo_ta_ngan || '',
               content: item.noi_dung || '',
               image: fixImagePath(item.anh_thu_vien),
               created_at: item.created_at
-        }));
+           };
+        });
+        
+        // 💡 MÁY SOI 3: Hiển thị kết quả cuối cùng trước khi đẩy ra UI
+        console.log("🎯 Dữ liệu chuẩn bị đẩy lên màn hình:", mapped);
+        return mapped;
     } catch (error) {
-        console.error("Lỗi tải thư viện:", error);
+        console.error("❌ Lỗi tải thư viện:", error);
         return [];
     }
   },

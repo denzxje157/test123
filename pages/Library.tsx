@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { supabase } from '../services/supabaseClient.ts';
+import { contentService } from '../services/contentService';
 
 type Category = 'architecture' | 'ritual' | 'festival';
 
@@ -35,32 +35,19 @@ const Library: React.FC = () => {
     const fetchLibrary = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('thu_vien')
-          .select('*, dan_toc(ten_dan_toc)');
+        // 🚀 CHÌA KHÓA LÀ ĐÂY: Gọi thẳng dữ liệu "Sạch" từ contentService
+        const data = await contentService.getLibraryItems();
 
-        if (error) throw error;
-
-        if (data) {
-          // LỌC DỮ LIỆU TRÙNG LẶP: Tự động loại bỏ các bài có cùng Tiêu đề và Dân tộc
+        if (data && data.length > 0) {
+          // LỌC DỮ LIỆU TRÙNG LẶP: Loại bỏ các bài có cùng Tiêu đề và Dân tộc
           const uniqueData = data.filter((value, index, self) =>
             index === self.findIndex((t) => (
-              t.tieu_de === value.tieu_de && 
-              t.dan_toc?.ten_dan_toc === value.dan_toc?.ten_dan_toc
+              t.title === value.title && 
+              t.ethnic === value.ethnic
             ))
           );
-
-          const mapped = uniqueData.map(item => ({
-            id: item.id,
-            category: (item.danh_muc === 'kien-truc' ? 'architecture' : 
-                       item.danh_muc === 'nghi-le' ? 'ritual' : 'festival') as Category,
-            ethnic: item.dan_toc?.ten_dan_toc || 'Khác',
-            title: item.tieu_de,
-            desc: item.mo_ta_ngan,
-            content: item.noi_dung,
-            image: item.anh_thu_vien?.replace('/public/images/', '/public/images-sacviet/'),
-          }));
-          setItems(mapped);
+          
+          setItems(uniqueData as LibraryItem[]);
         }
       } catch (err) { 
         console.error("Lỗi lấy dữ liệu:", err); 
@@ -97,7 +84,6 @@ const Library: React.FC = () => {
         <header className="mb-8 lg:mb-12 text-center">
           <h2 className="text-4xl lg:text-7xl font-black text-text-main italic mb-6">Tiếng Vọng <span className="text-gold">Tiền Nhân</span></h2>
           
-          {/* FIX LỖI TÌM KIẾM BỊ LỆCH: Dùng Box tàng hình để bọc Icon */}
           <div className="max-w-md mx-auto relative group z-20">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <span className="material-symbols-outlined text-gold group-hover:text-primary transition-colors text-xl leading-none">
@@ -114,9 +100,7 @@ const Library: React.FC = () => {
           </div>
         </header>
 
-        {/* TỐI ƯU MOBILE: Bộ lọc xuất hiện dạng thanh cuộn và Dropdown cho màn hình nhỏ */}
         <div className="lg:hidden mb-8 space-y-4">
-          {/* Tabs Danh mục (Cuộn ngang) */}
           <div className="flex overflow-x-auto custom-scrollbar pb-3 gap-3">
             {CATEGORIES.map((cat) => (
               <button 
@@ -131,7 +115,6 @@ const Library: React.FC = () => {
             ))}
           </div>
 
-          {/* Chọn Dân tộc (Dropdown) */}
           <div className="relative">
             <select 
               value={selectedEthnicFilter} 
@@ -151,7 +134,6 @@ const Library: React.FC = () => {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8 items-start">
-          {/* CỘT BỘ LỌC PC (Giữ nguyên cho màn hình lớn) */}
           <aside className="hidden lg:block w-72 shrink-0 space-y-8 sticky top-24">
             <div className="bg-white p-2 rounded-[2rem] border border-gold/20 shadow-xl">
                {CATEGORIES.map((cat) => (
@@ -180,7 +162,6 @@ const Library: React.FC = () => {
             </div>
           </aside>
 
-          {/* VÙNG HIỂN THỊ DỮ LIỆU */}
           <main className="flex-1 w-full">
             {isLoading ? (
                <div className="text-center py-32 flex flex-col items-center gap-4">
@@ -215,7 +196,6 @@ const Library: React.FC = () => {
           </main>
         </div>
 
-        {/* MODAL CHI TIẾT */}
         {selectedItem && createPortal(
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedItem(null)}></div>

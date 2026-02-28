@@ -49,16 +49,18 @@ export const productService = {
   },
 
   // 2. CỨU HỘ BẢNG DÂN TỘC
+  // 2. CỨU HỘ BẢNG DÂN TỘC
   seedDanToc: async (ethnicData: any[]) => {
     if (!isSupabaseConfigured) return;
     const payloads = ethnicData.map(e => ({
       ten_dan_toc: e.name,
       dia_ban: e.location,
       dan_so: e.population,
-      toa_do: `${e.coords[0]}, ${e.coords[1]}`,
+      // 👇 CHÌA KHÓA LÀ ĐÂY: Ép nó thành mảng JSON chuẩn để Home.tsx đọc không bị sặc!
+      toa_do: JSON.stringify(e.coords), 
       mo_ta: e.description,
       di_san: e.heritage,
-      anh_dai_dien: fixImagePath(e.img) // 👈 Tự sửa link ảnh dân tộc
+      anh_dai_dien: fixImagePath(e.img)
     }));
     await supabase.from('dan_toc').insert(payloads);
   },

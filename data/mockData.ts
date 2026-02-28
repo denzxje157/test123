@@ -290,7 +290,7 @@ export const marketplaceData = [
   { e: "M'NÔNG", items: [
     { n: "Trang sức", p: "Từ 50.000 VNĐ", img: "pictures-sanpham/m-nong/trang-suc.jpg", d: "Vòng cổ, vòng tay bằng đồng, bạc, hạt cườm... không chỉ làm đẹp mà còn thể hiện sức mạnh và quyền uy của người M'Nông." },
     { n: "Gùi", p: "Từ 150.000 VNĐ", img: "pictures-sanpham/m-nong/gui.jpeg", d: "Chiếc gùi thân thuộc, gắn bó với người M'Nông như hình với bóng. Gùi theo người lên rẫy, gùi theo người đi săn voi, chứa đựng cả cuộc sống sinh tồn." },
-    { n: "Thổ cẩm", p: "Từ 400.000 VNĐ", img: "https://binhphuoc.gov.vn/uploads/binhphuoc/dulich/2023_05/det-tho-cam-6.jpg", d: "Sắc đỏ đen chủ đạo mạnh mẽ. Thổ cẩm M'Nông dày dặn, bền bỉ, mang vẻ đẹp hoang sơ và phóng khoáng như chính con người nơi đây." } // Giữ ảnh cũ
+    { n: "Thổ cẩm", p: "Từ 400.000 VNĐ", img: "", d: "Sắc đỏ đen chủ đạo mạnh mẽ. Thổ cẩm M'Nông dày dặn, bền bỉ, mang vẻ đẹp hoang sơ và phóng khoáng như chính con người nơi đây." } // Giữ ảnh cũ
   ]},
 
   // --- 35. MƯỜNG ---
