@@ -41,9 +41,9 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { path: '/admin/products', icon: 'inventory_2', label: 'Quản lý Sản phẩm' },
     { path: '/admin/orders', icon: 'shopping_cart', label: 'Quản lý Đơn hàng' },
     { path: '/admin/users', icon: 'group', label: 'Khách hàng' },
+    { path: '/admin/seo', icon: 'edit_document', label: 'Bài Viết (SEO)' }, // NÚT MỚI THÊM NẰM Ở ĐÂY
     { path: '/', icon: 'home', label: 'Về trang chủ' },
   ];
-
   return (
     <div className="min-h-screen bg-[#F7F3E9] font-display flex overflow-x-hidden relative">
       {/* Mobile Overlay (Lớp mờ khi mở menu trên điện thoại) */}

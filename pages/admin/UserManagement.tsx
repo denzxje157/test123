@@ -36,23 +36,18 @@ const UserManagement: React.FC = () => {
 
     if (window.confirm(`Bạn có chắc muốn cấp quyền ${newRole === 'admin' ? 'QUẢN TRỊ' : 'NGƯỜI DÙNG'} cho tài khoản này?`)) {
       try {
-        // ĐÃ THAY THẾ BẰNG LUỒNG GỌI BACKEND VERCEL
-        const res = await fetch('/api/update-role', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            targetUserId: userId, 
-            newRole: newRole 
-          })
+        // GỌI HÀM SIÊU QUYỀN LỰC TỪ SUPABASE (RPC)
+        const { error } = await supabase.rpc('set_user_role', {
+          target_user_id: userId,
+          new_role: newRole
         });
         
-        const data = await res.json();
-        
-        if (res.ok) {
-          alert('Cập nhật quyền thành công!');
-          fetchUsers(); // Load lại danh sách ngay lập tức để thấy sự thay đổi
+        if (error) {
+          console.error("Lỗi cấp quyền RPC:", error);
+          alert('Lỗi từ Server: ' + error.message);
         } else {
-          alert('Lỗi từ Server: ' + (data.error || 'Không rõ nguyên nhân'));
+          alert('Cập nhật quyền thành công!');
+          fetchUsers(); // Tải lại danh sách để thấy thay đổi
         }
       } catch (error) {
         alert('Lỗi kết nối mạng khi cập nhật quyền!');

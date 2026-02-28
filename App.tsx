@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar.tsx';
@@ -20,6 +19,7 @@ import ProductManagement from './pages/admin/ProductManagement.tsx';
 import OrderManagement from './pages/admin/OrderManagement.tsx';
 import UserManagement from './pages/admin/UserManagement.tsx';
 import ContentManagement from './pages/admin/ContentManagement.tsx';
+import SeoManagement from './pages/admin/SeoManagement.tsx'; // THÊM DÒNG NÀY
 
 
 // Component phụ trợ: Tự động cuộn lên đầu trang khi đổi route
@@ -30,7 +30,7 @@ const ScrollToTop = () => {
     window.scrollTo({
       top: 0,
       left: 0,
-      behavior: 'instant' // Dùng instant để tránh xung đột với animation fade-in
+      behavior: 'instant' 
     });
   }, [pathname]);
 
@@ -40,7 +40,6 @@ const ScrollToTop = () => {
 // Component Wrapper để tạo hiệu ứng fade-in khi chuyển trang
 const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  // Không áp dụng animation cho trang admin để tránh giật
   if (location.pathname.startsWith('/admin')) return <>{children}</>;
   
   return (
@@ -63,6 +62,7 @@ const App: React.FC = () => {
             <Route path="/admin/orders" element={<OrderManagement />} />
             <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/admin/content" element={<ContentManagement />} />
+            <Route path="/admin/seo" element={<SeoManagement />} /> {/* THÊM DÒNG NÀY */}
 
             {/* Public Routes */}
             <Route path="*" element={
