@@ -13,41 +13,27 @@ import CartDrawer from './components/CartDrawer.tsx';
 import AuthModal from './components/AuthModal.tsx';
 import Blog from './pages/Blog';
 import BlogDetail from './pages/BlogDetail';
-import SeoManagement from './pages/admin/SeoManagement.tsx';
+
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard.tsx';
 import ProductManagement from './pages/admin/ProductManagement.tsx';
 import OrderManagement from './pages/admin/OrderManagement.tsx';
 import UserManagement from './pages/admin/UserManagement.tsx';
 import ContentManagement from './pages/admin/ContentManagement.tsx';
-<Route path="/admin/seo" element={<SeoManagement />} />
+import SeoManagement from './pages/admin/SeoManagement.tsx'; // THÊM DÒNG NÀY
 
-
-// Component phụ trợ: Tự động cuộn lên đầu trang khi đổi route
 const ScrollToTop = () => {
   const { pathname } = useLocation();
-
   useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: 'instant' 
-    });
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [pathname]);
-
   return null;
 };
 
-// Component Wrapper để tạo hiệu ứng fade-in khi chuyển trang
 const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   if (location.pathname.startsWith('/admin')) return <>{children}</>;
-  
-  return (
-    <div key={location.pathname} className="animate-fade-in-page">
-      {children}
-    </div>
-  );
+  return <div key={location.pathname} className="animate-fade-in-page">{children}</div>;
 };
 
 const App: React.FC = () => {
@@ -57,7 +43,7 @@ const App: React.FC = () => {
         <Router>
           <ScrollToTop />
           <Routes>
-            {/* Admin Routes (Không có Navbar/Footer chung) */}
+            {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/products" element={<ProductManagement />} />
             <Route path="/admin/orders" element={<OrderManagement />} />
@@ -88,15 +74,6 @@ const App: React.FC = () => {
               </div>
             } />
           </Routes>
-          <style>{`
-            @keyframes fade-in-page {
-              from { opacity: 0; transform: translateY(10px); }
-              to { opacity: 1; transform: translateY(0); }
-            }
-            .animate-fade-in-page {
-              animation: fade-in-page 0.5s ease-out forwards;
-            }
-          `}</style>
         </Router>
       </CartProvider>
     </AuthProvider>

@@ -36,12 +36,13 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (window.innerWidth <= 768) setSidebarOpen(false);
   }, [location.pathname]);
 
+  // Tìm đến mảng menuItems và thay thế bằng đoạn này:
   const menuItems = [
     { path: '/admin/dashboard', icon: 'dashboard', label: 'Tổng quan' },
     { path: '/admin/products', icon: 'inventory_2', label: 'Quản lý Sản phẩm' },
     { path: '/admin/orders', icon: 'shopping_cart', label: 'Quản lý Đơn hàng' },
     { path: '/admin/users', icon: 'group', label: 'Khách hàng' },
-    { path: '/admin/seo', icon: 'edit_document', label: 'Bài Viết (SEO)' }, // Thêm nút này
+    { path: '/admin/seo', icon: 'edit_document', label: 'Bài Viết (SEO)' }, // NÚT MỚI Ở ĐÂY
     { path: '/', icon: 'home', label: 'Về trang chủ' },
   ];
   return (
