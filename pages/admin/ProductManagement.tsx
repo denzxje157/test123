@@ -37,6 +37,8 @@ const ProductManagement: React.FC = () => {
     if (!window.confirm('Hệ thống sẽ dọn sạch và nạp lại Bảng Dân Tộc, Sản Phẩm và Thư Viện. Bấm OK để tiếp tục!')) return;
     setIsLoading(true);
     try {
+      // 🚀 LỆNH TẨY NÃO: Xóa sạch rác cũ trong trình duyệt để diệt tận gốc lỗi JSON.parse
+      localStorage.clear();
       // 1. Quét dọn sạch sẽ trước khi nạp để không bị trùng lặp
       await supabase.from('san_pham').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       await supabase.from('thu_vien').delete().neq('id', '00000000-0000-0000-0000-000000000000');
