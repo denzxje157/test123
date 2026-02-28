@@ -2,101 +2,119 @@ import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 export interface LibraryItem {
   id: string;
-  category: 'architecture' | 'ritual' | 'festival';
+  category: 'architecture' | 'ritual' | 'festival' | string;
   ethnic: string;
   title: string;
   desc: string;
   content: string;
   image: string;
+  created_at?: string;
 }
 
-// Dữ liệu mẫu ban đầu (Fallback)
-const INITIAL_LIBRARY_DATA: LibraryItem[] = [
-  { id: 'arch-kinh-dinh', category: 'architecture', ethnic: 'Kinh', title: 'Đình Làng Việt', desc: 'Biểu tượng quyền lực làng xã và tâm linh.', content: "Đình làng là công trình kiến trúc lớn nhất, quan trọng nhất của làng người Việt ở Bắc Bộ...", image: 'https://ltlskt-dhxd.com/wp-content/uploads/2019/03/4.png?w=840' },
-  { id: 'arch-cham-thap', category: 'architecture', ethnic: 'Chăm', title: 'Tháp Chăm (Kalan)', desc: 'Đỉnh cao kỹ thuật xây gạch không mạch.', content: "Kalan là đền thờ các vị thần Hindu...", image: 'https://fvgtravel.com.vn/uploads/up/root/editor/2025/05/20/19/33/w1230/tha1747722808_5733.jpg' },
-  { id: 'fes-kinh-tet', category: 'festival', ethnic: 'Kinh', title: 'Tết Nguyên Đán', desc: 'Lễ hội lớn nhất.', content: "Tết Nguyên Đán là dịp đoàn viên...", image: 'https://media.vov.vn/sites/default/files/styles/large/public/2021-02/banh_chung_tet_0.jpg' },
-  // ... (Có thể thêm nhiều hơn nếu cần, nhưng để gọn ta dùng ít mẫu)
-];
-
-const LOCAL_STORAGE_KEY = 'sacviet_library';
+// Hàm trợ giúp lấy ID dân tộc
+const getDanTocId = async (tenDanToc: string) => {
+  if (!tenDanToc || tenDanToc === 'Khác' || tenDanToc === 'TẤT CẢ') return null;
+  try {
+    const { data } = await supabase
+      .from('dan_toc')
+      .select('id')
+      .ilike('ten_dan_toc', `%${tenDanToc}%`)
+      .limit(1)
+      .single();
+    return data?.id || null;
+  } catch {
+    return null;
+  }
+};
 
 export const contentService = {
-  // Lấy tất cả bài viết thư viện
+  // Lấy dữ liệu Thư viện
   getLibraryItems: async (): Promise<LibraryItem[]> => {
-    if (!isSupabaseConfigured) {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (!saved) {
-        // Nếu chưa có, lưu dữ liệu mẫu vào localStorage
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_LIBRARY_DATA));
-        return INITIAL_LIBRARY_DATA;
-      }
-      return JSON.parse(saved);
-    }
-
+    if (!isSupabaseConfigured) return [];
+    
     const { data, error } = await supabase
-      .from('thu_vien') // Giả định tên bảng là 'thu_vien'
-      .select('*')
+      .from('thu_vien')
+      .select('*, dan_toc(ten_dan_toc)')
       .order('created_at', { ascending: false });
     
     if (error) {
-      console.warn('Lỗi Supabase, dùng fallback:', error);
-      return INITIAL_LIBRARY_DATA;
+      console.error('Lỗi tải thư viện:', error);
+      return [];
     }
-    return data || [];
+    
+    // Dịch từ Tiếng Việt (Database) sang Tiếng Anh (Giao diện)
+    return (data || []).map(item => ({
+      id: item.id,
+      category: item.danh_muc || 'architecture',
+      ethnic: item.dan_toc?.ten_dan_toc || 'Khác',
+      title: item.tieu_de || 'Chưa có tiêu đề',
+      desc: item.mo_ta_ngan || '',
+      content: item.noi_dung || '',
+      image: item.anh_thu_vien || '',
+      created_at: item.created_at
+    }));
   },
 
   // Thêm bài viết mới
-  addLibraryItem: async (item: Omit<LibraryItem, 'id'>) => {
-    const newItem = { ...item, id: `lib-${Date.now()}` };
-
-    if (!isSupabaseConfigured) {
-      const items = await contentService.getLibraryItems();
-      const updatedItems = [newItem, ...items];
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedItems));
-      return newItem;
-    }
-
-    const { data, error } = await supabase
-      .from('thu_vien')
-      .insert([newItem])
-      .select()
-      .single();
+  addLibraryItem: async (item: Omit<LibraryItem, 'id' | 'created_at'>) => {
+    const dtId = await getDanTocId(item.ethnic);
     
+    // Dịch từ Tiếng Anh (Giao diện) sang Tiếng Việt (Database)
+    const payload = {
+      danh_muc: item.category,
+      tieu_de: item.title,
+      mo_ta_ngan: item.desc,
+      noi_dung: item.content,
+      anh_thu_vien: item.image,
+      id_dan_toc: dtId
+    };
+
+    const { data, error } = await supabase.from('thu_vien').insert([payload]).select().single();
     if (error) throw error;
     return data;
   },
 
   // Cập nhật bài viết
   updateLibraryItem: async (id: string, updates: Partial<LibraryItem>) => {
-    if (!isSupabaseConfigured) {
-      const items = await contentService.getLibraryItems();
-      const updatedItems = items.map(i => i.id === id ? { ...i, ...updates } : i);
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedItems));
-      return;
-    }
+    let dtId = undefined;
+    if (updates.ethnic) dtId = await getDanTocId(updates.ethnic);
 
-    const { error } = await supabase
-      .from('thu_vien')
-      .update(updates)
-      .eq('id', id);
-    
+    const payload: any = {};
+    if (updates.category) payload.danh_muc = updates.category;
+    if (updates.title) payload.tieu_de = updates.title;
+    if (updates.desc) payload.mo_ta_ngan = updates.desc;
+    if (updates.content) payload.noi_dung = updates.content;
+    if (updates.image) payload.anh_thu_vien = updates.image;
+    if (dtId !== undefined) payload.id_dan_toc = dtId;
+
+    const { error } = await supabase.from('thu_vien').update(payload).eq('id', id);
     if (error) throw error;
   },
 
   // Xóa bài viết
   deleteLibraryItem: async (id: string) => {
-    if (!isSupabaseConfigured) {
-      const items = await contentService.getLibraryItems();
-      const updatedItems = items.filter(i => i.id !== id);
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedItems));
-      return;
-    }
+    const { error } = await supabase.from('thu_vien').delete().eq('id', id);
+    if (error) throw error;
+  },
 
-    const { error } = await supabase
-      .from('thu_vien')
-      .delete()
-      .eq('id', id);
+  // Nạp dữ liệu mẫu cho Thư viện
+  seedLibraryItems: async (items: any[]) => {
+    if (!isSupabaseConfigured) return;
+    const { data: danTocList } = await supabase.from('dan_toc').select('id, ten_dan_toc');
     
+    const payloads = items.map(i => {
+      const dt = danTocList?.find(d => i.ethnic && d.ten_dan_toc.toLowerCase().includes(i.ethnic.toLowerCase()));
+      return {
+        danh_muc: i.category,
+        tieu_de: i.title,
+        mo_ta_ngan: i.desc,
+        noi_dung: i.content,
+        anh_thu_vien: i.image,
+        id_dan_toc: dt?.id || null
+      };
+    });
+
+    const { error } = await supabase.from('thu_vien').insert(payloads);
     if (error) throw error;
   }
 };

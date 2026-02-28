@@ -29,6 +29,12 @@ const ProductManagement: React.FC = () => {
   };
 
   const handleSeedData = async () => {
+    // 🚧 THÊM CHỐT CHẶN Ở ĐÂY: Nếu đã có sản phẩm thì cấm nạp thêm!
+    if (products.length > 0) {
+      alert('⚠️ Dữ liệu mẫu đã được nạp rồi! Để tránh bị trùng lặp 1000 sản phẩm như trước, hệ thống đã chặn thao tác này. Nếu muốn nạp lại từ đầu, bạn phải xóa hết các sản phẩm bên dưới.');
+      return;
+    }
+
     if (!window.confirm('Bạn có chắc muốn nạp dữ liệu mẫu vào Database? Hành động này sẽ thêm nhiều sản phẩm.')) return;
     
     setIsLoading(true);
@@ -55,7 +61,7 @@ const ProductManagement: React.FC = () => {
       });
 
       await productService.seedProducts(allItems);
-      alert('Đã nạp dữ liệu thành công!');
+      alert('Đã nạp dữ liệu thành công! Chỉ nạp 1 lần duy nhất thôi nhé!');
       fetchProducts();
     } catch (error) {
       console.error('Lỗi seed data:', error);
