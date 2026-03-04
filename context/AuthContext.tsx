@@ -24,10 +24,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const currentUser = await authService.getCurrentUser();
         setUser(currentUser);
 
-        // 2. Chạy ngầm lên Server Supabase để lấy quyền Admin mới nhất (tránh bị kẹt quyền cũ)
+        // 2. Chạy ngầm lên Server Supabase để lấy quyền Admin mới nhất & Check tài khoản ảo
         if (isSupabaseConfigured && currentUser) {
-           supabase.auth.getUser().then(({ data, error }) => {
-              if (data?.user && !error) {
+           supabase.auth.getUser().then(async ({ data, error }) => {
+              // THÊM MỚI: Bắt lỗi tài khoản bị xóa (Bóng ma)
+              if (error || !data?.user) {
+                console.warn("Tài khoản đã bị vô hiệu hóa hoặc xóa khỏi hệ thống! Đang tiến hành đăng xuất...");
+                await authService.logout(); // Dọn dẹp token cũ
+                setUser(null);
+                window.location.href = '/'; // Đá văng ra trang chủ
+                return;
+              }
+
+              // Nếu tài khoản vẫn hợp lệ -> Cập nhật quyền Admin mới nhất
+              if (data?.user) {
                   setUser(prev => {
                       if (!prev) return null;
                       const freshRole = data.user.user_metadata?.role || 'user';
