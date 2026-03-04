@@ -284,7 +284,7 @@ const Home: React.FC = () => {
             </RevealSection>
             
             <div className="flex flex-col lg:flex-row h-[700px] lg:h-[900px] gap-12">
-              <div className="flex-1 relative rounded-[3rem] lg:rounded-[5rem] overflow-hidden border-[8px] border-primary/10 shadow-2xl bg-[#e4e9f0]">
+              <div className="flex-1 relative rounded-[3rem] lg:rounded-[5rem] overflow-hidden border-[8px] border-primary/10 shadow-2xl bg-[#e4e9f0] z-0 isolate">
                  <MapContainer center={MAP_CENTER} zoom={6} className="w-full h-full" zoomControl={false} attributionControl={false}>
                     <MapFixer />
                     <TileLayer url="https://mt1.google.com/vt/lyrs=m&hl=vi&x={x}&y={y}&z={z}" />

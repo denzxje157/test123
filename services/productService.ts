@@ -4,6 +4,7 @@ export interface Product {
   id: string;
   name: string;
   ethnic: string;
+  stock: number;
   price: number; 
   price_display: string; 
   description: string;
@@ -89,6 +90,7 @@ export const productService = {
     const { data: dtData } = await supabase.from('dan_toc').select('id').ilike('ten_dan_toc', `%${product.ethnic}%`).limit(1).single();
     const payload = {
       ten_san_pham: product.name,
+      so_luong: product.stock || 0,
       gia: product.price_display || `${product.price.toLocaleString('vi-VN')} đ`,
       mo_ta: product.description,
       anh_san_pham: fixImagePath(product.image),
@@ -106,6 +108,7 @@ export const productService = {
     if (updates.price_display) payload.gia = updates.price_display;
     if (updates.description) payload.mo_ta = updates.description;
     if (updates.image) payload.anh_san_pham = fixImagePath(updates.image);
+    if (updates.stock !== undefined) payload.so_luong = updates.stock;
     if (updates.ethnic) {
       const { data: dtData } = await supabase.from('dan_toc').select('id').ilike('ten_dan_toc', `%${updates.ethnic}%`).limit(1).single();
       if (dtData) payload.id_dan_toc = dtData.id;

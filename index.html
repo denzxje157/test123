@@ -75,12 +75,13 @@
         filter: sepia(0.6) saturate(0.8) brightness(0.9) contrast(1.1);
       }
       
-      .leaflet-container {
+          .leaflet-container {
         background: #f0e6cc !important;
-        border-radius: 2.5rem;
+        border-radius: inherit !important; /* Bắt buộc map phải bo góc theo thẻ div bọc ngoài */
         width: 100%;
         height: 100%;
         outline: none;
+        z-index: 1; /* Thêm z-index thấp cho bản thân container của map */
       }
 
       .paper-overlay {

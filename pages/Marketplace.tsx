@@ -9,6 +9,7 @@ interface Product {
   id: string;
   name: string;
   ethnic: string;
+  stock: number;
   price: string;
   priceValue: number;
   desc: string;
@@ -23,43 +24,46 @@ interface Product {
 export { marketplaceData };
 export const rawData = marketplaceData;
 
-const ProductCard = React.memo(({ product, onOpenDetail }: { product: Product, onOpenDetail: (p: Product) => void }) => (
-  <div className="group rounded-2xl md:rounded-[2.5rem] overflow-hidden transition-all duration-500 hover:shadow-[0_40px_80px_rgba(209,77,77,0.15)] hover:-translate-y-2 border border-gold/10 bg-white flex flex-col h-full cursor-pointer" onClick={() => onOpenDetail(product)}>
-    <div className="relative h-40 md:h-72 overflow-hidden shrink-0 bg-[#F9F7F2]">
-      <img 
-        src={product?.img || 'https://placehold.co/600x600?text=No+Image'} 
-        alt={product?.name || 'Sản phẩm'} 
-        loading="lazy"
-        className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" 
-      />
-      <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-primary/90 text-white text-[8px] md:text-[9px] font-black px-2 md:px-4 py-1 md:py-1.5 rounded-full uppercase tracking-widest backdrop-blur-sm border border-gold/30 shadow-md">
-        {product?.ethnic || 'Khác'}
+const ProductCard = React.memo(({ product, onOpenDetail }: { product: Product, onOpenDetail: (p: Product) => void }) => {
+  const isOutOfStock = product?.stock <= 0; // 👈 Kiểm tra kho
+
+  return (
+    <div className="group rounded-2xl md:rounded-[2.5rem] overflow-hidden transition-all duration-500 hover:shadow-[0_40px_80px_rgba(209,77,77,0.15)] hover:-translate-y-2 border border-gold/10 bg-white flex flex-col h-full cursor-pointer relative" onClick={() => onOpenDetail(product)}>
+      <div className="relative h-40 md:h-72 overflow-hidden shrink-0 bg-[#F9F7F2]">
+        <img src={product?.img || 'https://placehold.co/600x600?text=No+Image'} alt={product?.name || 'Sản phẩm'} loading="lazy" className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" />
+        
+        {/* 👈 LỚP PHỦ HẾT HÀNG */}
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-20 flex items-center justify-center">
+            <span className="bg-text-main text-white px-4 py-2 rounded-full font-black text-xs uppercase tracking-widest border border-white/50 shadow-lg rotate-[-10deg]">Đã hết hàng</span>
+          </div>
+        )}
+
+        <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-primary/90 text-white text-[8px] md:text-[9px] font-black px-2 md:px-4 py-1 md:py-1.5 rounded-full uppercase tracking-widest backdrop-blur-sm border border-gold/30 shadow-md">{product?.ethnic || 'Khác'}</div>
       </div>
-      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-         <div className="bg-white text-primary px-3 md:px-6 py-1.5 md:py-2.5 rounded-full font-black text-[10px] md:text-xs uppercase tracking-widest transform scale-90 group-hover:scale-100 transition-transform shadow-lg hidden md:block">Xem chi tiết</div>
-      </div>
-    </div>
-    <div className="p-3 md:p-6 text-left flex-grow flex flex-col">
-      <h3 className="text-sm md:text-lg font-black text-text-main tracking-tight mb-1 md:mb-2 group-hover:text-primary transition-colors line-clamp-2 min-h-[2.5rem] md:min-h-[3.5rem]">
-        {product?.name || 'Sản phẩm đang cập nhật'}
-      </h3>
-      <div className="mt-auto pt-2 md:pt-4 border-t border-gold/5 space-y-2 md:space-y-4">
-        <div className="flex items-center justify-between"><span className="text-primary font-black text-sm md:text-lg">{product?.price || 'Liên hệ'}</span></div>
-        <div className="grid grid-cols-2 gap-2 md:gap-3">
-           <button onClick={(e) => { e.stopPropagation(); onOpenDetail(product); }} className="border border-gold/30 rounded-lg md:rounded-xl py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase text-text-soft hover:bg-gold/10 transition-colors z-10">Tìm hiểu</button>
-           <button onClick={(e) => { e.stopPropagation(); onOpenDetail(product); }} className="bg-primary rounded-lg md:rounded-xl py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase text-white hover:brightness-110 shadow-lg shadow-primary/20 transition-all active:scale-95 z-10">Đặt mua</button>
+      <div className="p-3 md:p-6 text-left flex-grow flex flex-col">
+        <h3 className="text-sm md:text-lg font-black text-text-main tracking-tight mb-1 md:mb-2 group-hover:text-primary transition-colors line-clamp-2 min-h-[2.5rem] md:min-h-[3.5rem]">{product?.name || 'Sản phẩm đang cập nhật'}</h3>
+        <div className="mt-auto pt-2 md:pt-4 border-t border-gold/5 space-y-2 md:space-y-4">
+          <div className="flex items-center justify-between"><span className="text-primary font-black text-sm md:text-lg">{product?.price || 'Liên hệ'}</span></div>
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
+             <button onClick={(e) => { e.stopPropagation(); onOpenDetail(product); }} className="border border-gold/30 rounded-lg md:rounded-xl py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase text-text-soft hover:bg-gold/10 transition-colors z-10">Tìm hiểu</button>
+             {/* 👈 ĐỔI NÚT ĐẶT MUA NẾU HẾT HÀNG */}
+             <button disabled={isOutOfStock} onClick={(e) => { e.stopPropagation(); onOpenDetail(product); }} className={`rounded-lg md:rounded-xl py-2 md:py-2.5 text-[8px] md:text-[10px] font-black uppercase text-white transition-all z-10 ${isOutOfStock ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:brightness-110 shadow-lg shadow-primary/20 active:scale-95'}`}>
+               {isOutOfStock ? 'Tạm hết' : 'Đặt mua'}
+             </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-));
+  );
+});
 
 const ProductModal = ({ product, onClose }: { product: Product, onClose: () => void }) => {
   const [quantity, setQuantity] = useState(1);
   const cartContext = useCart();
   const addToCart = cartContext?.addToCart;
   const toggleCart = cartContext?.toggleCart;
-
+  const isOutOfStock = product.stock <= 0;
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = 'unset'; };
@@ -101,6 +105,9 @@ const ProductModal = ({ product, onClose }: { product: Product, onClose: () => v
              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gold/10">
                 <span className="text-xl md:text-2xl font-black text-primary">{product.price || 'Liên hệ'}</span>
                 <span className="text-xs text-text-soft font-bold bg-gold/10 px-2 py-1 rounded">Đã bán: {product.sold || 0}</span>
+                <span className={`text-xs font-bold px-2 py-1 rounded ${isOutOfStock ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'}`}>
+                  {isOutOfStock ? 'Hết hàng' : `Còn: ${product.stock} SP`}
+                </span>
              </div>
              <div className="space-y-4">
                <div className="bg-background-light p-4 rounded-xl border border-gold/10">
@@ -125,12 +132,18 @@ const ProductModal = ({ product, onClose }: { product: Product, onClose: () => v
                 <div className="flex items-center gap-3">
                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="size-8 bg-white rounded-lg border border-gold/10 flex items-center justify-center hover:bg-primary hover:text-white transition-colors text-lg font-bold">-</button>
                    <span className="w-6 text-center font-black">{quantity}</span>
-                   <button onClick={() => setQuantity(quantity + 1)} className="size-8 bg-white rounded-lg border border-gold/10 flex items-center justify-center hover:bg-primary hover:text-white transition-colors text-lg font-bold">+</button>
+                   {/* Đã chặn không cho bấm + nếu vượt kho */}
+                   <button disabled={quantity >= product.stock || isOutOfStock} onClick={() => setQuantity(quantity + 1)} className="size-8 bg-white rounded-lg border border-gold/10 flex items-center justify-center hover:bg-primary hover:text-white transition-colors text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-black">+</button>
                 </div>
              </div>
              <div className="flex gap-2">
-                <button onClick={handleAddToCart} className="flex-1 py-3 rounded-xl border-2 border-primary text-primary font-black uppercase text-[10px] tracking-widest hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"><span className="material-symbols-outlined text-lg">add_shopping_cart</span>Thêm giỏ</button>
-                <button onClick={handleBuyNow} className="flex-[1.5] py-3 rounded-xl bg-primary text-white font-black uppercase text-[10px] tracking-widest hover:brightness-110 shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">Mua ngay<span className="material-symbols-outlined text-lg">arrow_forward</span></button>
+                <button disabled={isOutOfStock} onClick={handleAddToCart} className="flex-1 py-3 rounded-xl border-2 border-primary text-primary font-black uppercase text-[10px] tracking-widest hover:bg-primary/5 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-400 disabled:text-gray-400">
+                  <span className="material-symbols-outlined text-lg">add_shopping_cart</span>Thêm giỏ
+                </button>
+                <button disabled={isOutOfStock} onClick={handleBuyNow} className="flex-[1.5] py-3 rounded-xl bg-primary text-white font-black uppercase text-[10px] tracking-widest hover:brightness-110 shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400">
+                  {isOutOfStock ? 'HẾT HÀNG' : 'Mua ngay'}
+                  <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                </button>
              </div>
           </div>
         </div>
@@ -163,6 +176,7 @@ const Marketplace: React.FC = () => {
             id: p.id,
             name: p.ten_san_pham,
             ethnic: p.dan_toc?.ten_dan_toc || 'Khác',
+            stock: p.so_luong || 0,
             price: p.gia,
             priceValue: parseInt(p.gia?.replace(/\D/g, '') || '0'),
             desc: p.mo_ta,

@@ -13,7 +13,7 @@ const ProductManagement: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   
   const [formData, setFormData] = useState<Partial<Product>>({
-    name: '', ethnic: '', price: 0, description: '', image: '', category: 'Thủ công'
+    name: '', ethnic: '', price: 0, description: '', image: '', category: 'Thủ công', stock: 0
   });
 
   useEffect(() => {
@@ -142,7 +142,7 @@ const ProductManagement: React.FC = () => {
             <span className="hidden sm:inline">Nạp dữ liệu mẫu</span>
             <span className="sm:hidden">Nạp mẫu</span>
           </button>
-          <button onClick={() => { setEditingProduct(null); setFormData({ name: '', ethnic: '', price: 0, description: '', image: '', category: 'Thủ công' }); setIsModalOpen(true); }} className="flex-1 md:flex-none px-4 md:px-6 py-2.5 md:py-2 bg-primary text-white rounded-xl font-bold uppercase tracking-widest text-[10px] md:text-xs hover:brightness-110 transition-colors shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95">
+          <button onClick={() => { setEditingProduct(null); setFormData({ name: '', ethnic: '', stock: 0, price: 0, description: '', image: '', category: 'Thủ công' }); setIsModalOpen(true); }} className="flex-1 md:flex-none px-4 md:px-6 py-2.5 md:py-2 bg-primary text-white rounded-xl font-bold uppercase tracking-widest text-[10px] md:text-xs hover:brightness-110 transition-colors shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95">
             <span className="material-symbols-outlined text-base md:text-lg">add</span>
             Thêm mới
           </button>
@@ -219,11 +219,16 @@ const ProductManagement: React.FC = () => {
                     <input required type="text" value={formData.ethnic || ''} onChange={e => setFormData({...formData, ethnic: e.target.value})} className="w-full border border-gold/20 bg-white rounded-xl p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-bold text-text-main transition-all shadow-sm" placeholder="VD: Mông, Thái..." />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">
                   <div>
                     <label className="block text-[10px] font-black text-text-soft uppercase tracking-widest mb-1.5">Giá (VNĐ)</label>
                     <input required type="number" value={formData.price || 0} onChange={e => setFormData({...formData, price: Number(e.target.value)})} className="w-full border border-gold/20 bg-white rounded-xl p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-black text-primary transition-all shadow-sm" />
                   </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-text-soft uppercase tracking-widest mb-1.5">Số lượng</label>
+                    <input required type="number" min="0" value={formData.stock || 0} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} className="w-full border border-gold/20 bg-white rounded-xl p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-bold text-text-main transition-all shadow-sm" placeholder="Nhập số lượng..." />
+                  </div>
+
                   <div>
                     <label className="block text-[10px] font-black text-text-soft uppercase tracking-widest mb-1.5">Link Ảnh (URL)</label>
                     <input required type="text" value={formData.image || ''} onChange={e => setFormData({...formData, image: e.target.value})} className="w-full border border-gold/20 bg-white rounded-xl p-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-medium text-text-main transition-all shadow-sm" placeholder="/pictures-sanpham/..." />
