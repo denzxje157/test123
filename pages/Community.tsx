@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { communityService } from '../services/communityService.ts'; 
+import { useAuth } from '../context/AuthContext.tsx'; 
 
 const getLunarDate = (solarDate: Date) => {
   const anchorDate = new Date(2026, 1, 17); 
@@ -26,21 +28,37 @@ const getLunarDate = (solarDate: Date) => {
   return { day: Math.max(1, Math.floor(lDay)), month: lMonth, yearLabel };
 };
 
+const getRelativeTime = (dateString?: string) => {
+  if (!dateString) return 'Vừa xong';
+  const rtf = new Intl.RelativeTimeFormat('vi', { numeric: 'auto' });
+  const timeDiff = new Date(dateString).getTime() - new Date().getTime();
+  const daysDifference = Math.round(timeDiff / (1000 * 60 * 60 * 24));
+  const hoursDifference = Math.round(timeDiff / (1000 * 60 * 60));
+  const minutesDifference = Math.round(timeDiff / (1000 * 60));
+
+  if (Math.abs(daysDifference) > 0) return rtf.format(daysDifference, 'day');
+  if (Math.abs(hoursDifference) > 0) return rtf.format(hoursDifference, 'hour');
+  if (Math.abs(minutesDifference) > 0) return rtf.format(minutesDifference, 'minute');
+  return 'Vừa xong';
+};
+
 interface Post { id: string; author: string; avatar: string; time: string; timestamp: number; location: string; content: string; image?: string; likes: number; comments: number; tags: string[]; }
 interface QuizQuestion { id: number; question: string; options: string[]; correctAnswerStr: string; explanation: string; }
 interface FestivalDef { id: string; name: string; lunarDateStr: string; location: string; solarDates: Record<number, string>; }
 interface FestivalDisplay { id: string; name: string; solarDate: string; lunarDateStr: string; location: string; daysLeft: number; }
 
-const MOCK_CURRENT_USER = { name: "Khách thăm", avatar: "K", };
+const MOCK_CURRENT_USER = { name: "Khách thăm", avatar: "K" };
+
 const INITIAL_POSTS: Post[] = [
   { id: '1', author: 'Minh Nguyễn', avatar: 'M', time: '2 giờ trước', timestamp: Date.now() - 7200000, location: 'Làng cổ Đường Lâm, Hà Nội', content: 'Về Đường Lâm một chiều nắng nhạt...', image: 'https://images.vietnamtourism.gov.vn/vn/images/2020/thang_5/2805_duong_lam_2.jpg', likes: 156, comments: 24, tags: ['KienTruc', 'BacBo'] },
   { id: '2', author: "H'Hen Niê", avatar: 'H', time: '5 giờ trước', timestamp: Date.now() - 18000000, location: 'Buôn Đôn, Đắk Lắk', content: 'Tiếng cồng chiêng vang vọng...', image: 'https://cdn.tuoitre.vn/thumb_w/730/2022/3/13/le-hoi-dam-trau-164716265738676239105.jpg', likes: 342, comments: 56, tags: ['TayNguyen', 'LeHoi'] },
   { id: '3', author: 'Lê Văn Khoa', avatar: 'K', time: '1 ngày trước', timestamp: Date.now() - 86400000, location: 'Hội An, Quảng Nam', content: 'Đèn lồng phố Hội...', image: 'https://images.vietnamtourism.gov.vn/vn//images/2023/cd_hoi_an5.jpeg', likes: 210, comments: 15, tags: ['DiSan', 'HoiAn'] },
-  { id: '4', author: 'Thạch Thị Sa', avatar: 'S', time: '30 phút trước', timestamp: Date.now() - 1800000, location: 'Trà Vinh', content: 'Múa Roks Skok...', image: 'https://media.vov.vn/sites/default/files/styles/large/public/2022-04/chol_chnam_thmay_1.jpg', likes: 89, comments: 8, tags: ['Khmer', 'NgheThuat'] },
 ];
+
 const RAW_QUIZ_DATA: QuizQuestion[] = [
   { id: 1, question: "Lễ hội 'Cấp Sắc' là nghi lễ trưởng thành của người đàn ông dân tộc nào?", options: ["H'Mông", "Dao", "Tày", "Thái"], correctAnswerStr: "Dao", explanation: "Lễ Cấp Sắc là nghi lễ quan trọng nhất của đàn ông Dao." },
 ];
+
 const FESTIVAL_LIBRARY: FestivalDef[] = [
   { id: 'tet-nguyen-dan', name: 'Tết Nguyên Đán', lunarDateStr: '01/01 Âm lịch', location: 'Toàn quốc', solarDates: { 2025: '2025-01-29', 2026: '2026-02-17' } },
   { id: 'tet-nguyen-tieu', name: 'Tết Nguyên Tiêu', lunarDateStr: '15/01 Âm lịch', location: 'Toàn quốc', solarDates: { 2025: '2025-02-12', 2026: '2026-03-03' } },
@@ -231,12 +249,11 @@ const QuizWidget = () => {
   );
 };
 
-const PostComposer = ({ onPost }: { onPost: (content: string, image?: string) => void }) => {
+const PostComposer = ({ onPost, currentUser }: { onPost: (content: string, image?: string) => void, currentUser: any }) => {
   const [content, setContent] = useState(''); 
   const [imageUrl, setImageUrl] = useState('');
   const [isPosting, setIsPosting] = useState(false);
 
-  // ĐÃ THÊM CHỨC NĂNG NHẬP LINK ẢNH
   const handleAddImage = () => {
     const url = prompt("Nhập đường dẫn hình ảnh (URL):");
     if (url) setImageUrl(url);
@@ -250,22 +267,31 @@ const PostComposer = ({ onPost }: { onPost: (content: string, image?: string) =>
       setContent(''); 
       setImageUrl('');
       setIsPosting(false); 
-    }, 800); 
+    }, 500); 
   };
 
   return (
     <div className="bg-white border-2 border-gold/10 rounded-[2rem] p-6 mb-10 shadow-xl relative overflow-hidden group hover:border-gold/30 transition-colors animate-fade-in">
       <div className="absolute -right-20 -bottom-20 size-60 bg-gold/5 rounded-full pointer-events-none"></div>
       <div className="flex gap-4 relative z-10">
-         <div className="size-12 rounded-full bg-primary flex items-center justify-center text-white shrink-0 font-black shadow-lg border-2 border-white">{MOCK_CURRENT_USER.avatar}</div>
+         <div className="size-12 rounded-full bg-primary flex items-center justify-center text-white shrink-0 font-black shadow-lg border-2 border-white">
+           {currentUser.avatar}
+         </div>
          <div className="flex-1">
-           <textarea value={content} onChange={(e) => setContent(e.target.value)} className="w-full bg-background-light border-2 border-gold/10 rounded-2xl p-4 text-text-main placeholder:text-text-soft/40 focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none min-h-[100px] text-sm font-medium transition-all" placeholder={`Chào ${MOCK_CURRENT_USER.name}, bạn có câu chuyện di sản nào muốn chia sẻ hôm nay?`} disabled={isPosting}></textarea>
+           <textarea 
+             value={content} 
+             onChange={(e) => setContent(e.target.value)} 
+             className="w-full bg-background-light border-2 border-gold/10 rounded-2xl p-4 text-text-main placeholder:text-text-soft/40 focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none min-h-[100px] text-sm font-medium transition-all" 
+             placeholder={`Chào ${currentUser.name}, bạn có câu chuyện di sản nào muốn chia sẻ hôm nay?`} 
+             disabled={isPosting}>
+           </textarea>
            
-           {/* NẾU CÓ ẢNH THÌ HIỂN THỊ TRƯỚC (PREVIEW) */}
            {imageUrl && (
-             <div className="relative mt-2 rounded-xl overflow-hidden h-32 md:h-48 border border-gold/20">
-               <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
-               <button onClick={() => setImageUrl('')} className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-red-500 transition-colors"><span className="material-symbols-outlined text-sm">close</span></button>
+             <div className="relative mt-2 rounded-xl overflow-hidden h-32 md:h-48 border border-gold/20 bg-black/5">
+               <img src={imageUrl} alt="Preview" className="w-full h-full object-contain" />
+               <button onClick={() => setImageUrl('')} className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-red-500 transition-colors">
+                 <span className="material-symbols-outlined text-sm">close</span>
+               </button>
              </div>
            )}
 
@@ -276,7 +302,9 @@ const PostComposer = ({ onPost }: { onPost: (content: string, image?: string) =>
                 </button>
                 <button className="p-2 text-gold hover:bg-gold/10 rounded-lg transition-colors tooltip" title="Check-in"><span className="material-symbols-outlined text-xl">location_on</span></button>
               </div>
-              <button onClick={handleSubmit} disabled={(!content.trim() && !imageUrl) || isPosting} className={`bg-primary px-8 py-2.5 rounded-xl font-black text-white uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2 ${((!content.trim() && !imageUrl) || isPosting) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gold hover:text-text-main'}`}> {isPosting ? (<span className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>) : (<>Đăng bài <span className="material-symbols-outlined text-sm">send</span></>)}</button>
+              <button onClick={handleSubmit} disabled={(!content.trim() && !imageUrl) || isPosting} className={`bg-primary px-8 py-2.5 rounded-xl font-black text-white uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2 ${((!content.trim() && !imageUrl) || isPosting) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gold hover:text-text-main'}`}> 
+                {isPosting ? (<span className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>) : (<>Đăng bài <span className="material-symbols-outlined text-sm">send</span></>)}
+              </button>
            </div>
          </div>
       </div>
@@ -284,50 +312,172 @@ const PostComposer = ({ onPost }: { onPost: (content: string, image?: string) =>
   );
 };
 
-const PostCard = React.memo(({ post }: { post: Post }) => {
-  const [liked, setLiked] = useState(false); const [likeCount, setLikeCount] = useState(post.likes);
+// ---------------------------------------------------------
+// POST CARD (BẢN ĐÃ TÍCH HỢP NÚT CHIA SẺ VÀ XÓA CỦA ADMIN)
+// ---------------------------------------------------------
+const PostCard = React.memo(({ post, isAdmin, onDelete }: { post: Post, isAdmin: boolean, onDelete: (id: string) => void }) => {
+  const [liked, setLiked] = useState(false); 
+  const [likeCount, setLikeCount] = useState(post.likes);
+  
+  // State quản lý Menu Chia sẻ
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const currentUrl = window.location.href; // Lấy link hiện tại để share
+
   const handleLike = () => { setLikeCount(prev => liked ? prev - 1 : prev + 1); setLiked(!liked); };
+  
+  const shareToFB = () => {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`, '_blank', 'width=600,height=400');
+    setShowShareMenu(false);
+  };
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(currentUrl);
+    alert('Đã sao chép liên kết thành công!');
+    setShowShareMenu(false);
+  };
+
   return (
     <article className="break-inside-avoid mb-6 bg-white border border-gold/15 rounded-[2rem] overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group animate-slide-up">
        <div className="p-5 flex items-center justify-between">
-          <div className="flex items-center gap-3"><div className="size-10 rounded-full bg-gold-light border border-gold/20 flex items-center justify-center text-text-main font-black shadow-sm">{post.avatar}</div><div><p className="text-sm font-black text-text-main leading-tight">{post.author}</p><p className="text-[10px] text-bronze uppercase font-bold tracking-widest mt-0.5">{post.time}</p></div></div>
-          <button className="text-text-soft/30 hover:text-primary transition-colors"><span className="material-symbols-outlined">more_horiz</span></button>
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-full bg-gold-light border border-gold/20 flex items-center justify-center text-text-main font-black shadow-sm">{post.avatar}</div>
+            <div>
+              <p className="text-sm font-black text-text-main leading-tight">{post.author}</p>
+              <p className="text-[10px] text-bronze uppercase font-bold tracking-widest mt-0.5">{post.time}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+             {isAdmin && (
+               <button onClick={() => onDelete(post.id)} className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg transition-colors tooltip" title="Xóa bài (Dành cho Admin)">
+                 <span className="material-symbols-outlined text-lg">delete</span>
+               </button>
+             )}
+             <button className="text-text-soft/30 hover:text-primary transition-colors"><span className="material-symbols-outlined">more_horiz</span></button>
+          </div>
        </div>
-       <div className="px-5 pb-4"><p className="text-sm text-text-soft leading-relaxed font-medium whitespace-pre-wrap">{post.content}</p>{post.tags.length > 0 && (<div className="flex flex-wrap gap-2 mt-3">{post.tags.map(tag => (<span key={tag} className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-1 rounded-md">#{tag}</span>))}</div>)}</div>
        
-       {/* ĐÃ FIX HIỂN THỊ ẢNH POST: DÙNG ASPECT-VIDEO ĐỂ ẢNH KHÔNG BỊ DÀI/MÉO */}
+       <div className="px-5 pb-4">
+         <p className="text-sm text-text-soft leading-relaxed font-medium whitespace-pre-wrap">{post.content}</p>
+         {post.tags && post.tags.length > 0 && (
+           <div className="flex flex-wrap gap-2 mt-3">
+             {post.tags.map(tag => (<span key={tag} className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-1 rounded-md">#{tag}</span>))}
+           </div>
+         )}
+       </div>
+       
        {post.image && (
-         <div className="w-full overflow-hidden relative">
-           <img src={post.image} alt="Post" onError={(e) => e.currentTarget.style.display = 'none'} className="w-full aspect-video object-cover transition-transform duration-[2s] group-hover:scale-105" loading="lazy" />
-           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+         <div className="w-full overflow-hidden relative bg-black/5">
+           <img src={post.image} alt="Post" onError={(e) => e.currentTarget.style.display = 'none'} className="w-full object-contain max-h-[500px] transition-transform duration-[2s] group-hover:scale-[1.02]" loading="lazy" />
          </div>
        )}
 
-       <div className="p-4 flex items-center gap-6 border-t border-gold/5 bg-background-light/30"><button onClick={handleLike} className={`flex items-center gap-1.5 font-black text-xs transition-colors ${liked ? 'text-primary' : 'text-text-soft hover:text-primary'}`}><span className={`material-symbols-outlined text-lg ${liked ? 'fill-1 animate-ping-once' : ''}`}>favorite</span> {likeCount}</button><button className="flex items-center gap-1.5 text-text-soft font-black text-xs hover:text-primary transition-colors"><span className="material-symbols-outlined text-lg">chat_bubble</span> {post.comments}</button><button className="flex items-center gap-1.5 text-text-soft font-black text-xs ml-auto hover:text-primary transition-colors"><span className="material-symbols-outlined text-lg">share</span></button></div>
+       <div className="p-4 flex items-center gap-6 border-t border-gold/5 bg-background-light/30">
+         <button onClick={handleLike} className={`flex items-center gap-1.5 font-black text-xs transition-colors ${liked ? 'text-primary' : 'text-text-soft hover:text-primary'}`}>
+           <span className={`material-symbols-outlined text-lg ${liked ? 'fill-1 animate-ping-once' : ''}`}>favorite</span> {likeCount}
+         </button>
+         <button className="flex items-center gap-1.5 text-text-soft font-black text-xs hover:text-primary transition-colors">
+           <span className="material-symbols-outlined text-lg">chat_bubble</span> {post.comments}
+         </button>
+         
+         {/* KHU VỰC MENU CHIA SẺ NẰM BÊN PHẢI */}
+         <div className="relative ml-auto">
+           <button onClick={() => setShowShareMenu(!showShareMenu)} className="flex items-center gap-1.5 text-text-soft font-black text-xs hover:text-primary transition-colors">
+             <span className="material-symbols-outlined text-lg">share</span>
+           </button>
+           
+           {showShareMenu && (
+             <div className="absolute bottom-full right-0 mb-2 w-40 bg-white rounded-xl shadow-xl border border-gold/20 overflow-hidden z-50 animate-fade-in">
+               <button onClick={shareToFB} className="w-full text-left px-4 py-3 text-xs font-bold text-white bg-[#1877F2] hover:brightness-110 flex items-center gap-2 transition-colors">
+                 <span className="material-symbols-outlined text-base">public</span> Facebook
+               </button>
+               <button onClick={copyLink} className="w-full text-left px-4 py-3 text-xs font-bold text-text-main hover:bg-background-light flex items-center gap-2 border-t border-gold/10 transition-colors">
+                 <span className="material-symbols-outlined text-base">link</span> Copy Link
+               </button>
+             </div>
+           )}
+         </div>
+       </div>
     </article>
   );
 });
 
 const Community: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
+  const [isLoading, setIsLoading] = useState(true);
+
+  let auth: any = null;
+  try {
+     auth = useAuth(); 
+  } catch (error) {
+     console.warn("Chưa bọc AuthProvider hoặc sai đường dẫn.");
+  }
   
-  // ĐÃ UPDATE ĐỂ TRUYỀN ĐƯỢC ẢNH VÀO BÀI ĐĂNG
-  const handleCreatePost = useCallback((content: string, imageUrl?: string) => { 
-    const newPost: Post = { 
-      id: Date.now().toString(), 
-      author: MOCK_CURRENT_USER.name, 
-      avatar: MOCK_CURRENT_USER.avatar, 
-      time: 'Vừa xong', 
-      timestamp: Date.now(), 
-      location: 'Việt Nam', 
-      content: content, 
-      image: imageUrl, // Gắn ảnh vào post
-      likes: 0, 
-      comments: 0, 
-      tags: ['ChiaSe', 'DiSan'] 
-    }; 
-    setPosts(prev => [newPost, ...prev]); 
+  const isAdmin = auth?.user?.role === 'admin';
+  const currentUserData = {
+     name: auth?.user?.fullName || MOCK_CURRENT_USER.name,
+     avatar: auth?.user?.fullName?.charAt(0).toUpperCase() || MOCK_CURRENT_USER.avatar
+  };
+
+  const loadPosts = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await communityService.getPosts();
+      if (data && data.length > 0) {
+        const mappedPosts: Post[] = data.map(p => ({
+          id: p.id || Math.random().toString(),
+          author: p.author_name || 'Khách',
+          avatar: p.author_avatar || 'K',
+          time: getRelativeTime(p.created_at),
+          timestamp: p.created_at ? new Date(p.created_at).getTime() : Date.now(),
+          location: p.location || 'Việt Nam',
+          content: p.content || '',
+          image: p.image_url,
+          likes: p.likes || 0,
+          comments: 0,
+          tags: ['ChiaSe', 'DiSan']
+        }));
+        setPosts([...mappedPosts, ...INITIAL_POSTS]); 
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải bài viết:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadPosts();
+  }, [loadPosts]);
+
+  const handleCreatePost = useCallback(async (content: string, imageUrl?: string) => { 
+    try {
+      await communityService.createPost({
+        author_name: currentUserData.name,
+        author_avatar: currentUserData.avatar,
+        content: content,
+        image_url: imageUrl,
+        location: 'Cộng đồng Sắc Việt',
+        likes: 0
+      });
+      loadPosts(); 
+    } catch (error) {
+      console.error("Lỗi đăng bài:", error);
+      alert('Đăng bài thất bại, vui lòng kiểm tra lại kết nối!');
+    }
+  }, [loadPosts, currentUserData]);
+
+  const handleDeletePost = async (postId: string) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không thể hoàn tác.")) return;
+    try {
+      await communityService.deletePost(postId); 
+      setPosts(prev => prev.filter(p => p.id !== postId)); 
+      alert("Đã xóa bài viết thành công!");
+    } catch (error) {
+      console.error("Lỗi xóa bài:", error);
+      alert("Lỗi! Không thể xóa bài viết này.");
+    }
+  };
 
   return (
     <div className="relative min-h-screen font-display bg-[#F7F3E9]">
@@ -339,7 +489,29 @@ const Community: React.FC = () => {
           <p className="text-text-soft font-serif italic text-lg max-w-2xl mx-auto">"Nơi kết nối những trái tim yêu văn hóa, cùng chia sẻ những khoảnh khắc và câu chuyện di sản quý giá."</p>
         </header>
         <div className="flex flex-col lg:flex-row gap-10 items-start">
-          <div className="flex-1 w-full"><PostComposer onPost={handleCreatePost} /><div className="columns-1 md:columns-2 gap-6 space-y-6">{posts.map((post) => (<PostCard key={post.id} post={post} />))}</div><div className="mt-10 text-center animate-fade-in"><button className="px-8 py-3 rounded-full border-2 border-primary text-primary font-black uppercase text-xs tracking-widest hover:bg-primary hover:text-white transition-all">Tải thêm bài viết</button></div></div>
+          <div className="flex-1 w-full">
+             
+             <PostComposer onPost={handleCreatePost} currentUser={currentUserData} />
+             
+             {isLoading ? (
+               <div className="text-center py-10 text-gold font-black uppercase tracking-widest animate-pulse">
+                 Đang tải bài viết...
+               </div>
+             ) : (
+               <div className="columns-1 md:columns-2 gap-6 space-y-6">
+                 {posts.map((post) => (
+                   <PostCard 
+                     key={post.id} 
+                     post={post} 
+                     isAdmin={isAdmin}
+                     onDelete={handleDeletePost}
+                   />
+                 ))}
+               </div>
+             )}
+             
+             <div className="mt-10 text-center animate-fade-in"><button className="px-8 py-3 rounded-full border-2 border-primary text-primary font-black uppercase text-xs tracking-widest hover:bg-primary hover:text-white transition-all">Tải thêm bài viết</button></div>
+          </div>
           <aside className="w-full lg:w-80 shrink-0 space-y-8 sticky top-24"><QuizWidget /><FestivalWidget /><div className="text-center pt-8 border-t border-gold/10"><p className="text-[10px] text-text-soft/40 uppercase tracking-widest font-bold">© 2026 Sắc Việt Community</p></div></aside>
         </div>
       </div>

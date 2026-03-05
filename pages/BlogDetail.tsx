@@ -53,18 +53,48 @@ const BlogDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Nội dung Bài viết (Sử dụng dangerouslySetInnerHTML để render HTML từ DB) */}
+      {/* Nội dung Bài viết */}
       <div className="max-w-4xl mx-auto bg-white -mt-10 md:-mt-20 relative z-10 p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] shadow-2xl border border-gold/20">
         <div className="text-lg md:text-xl font-bold text-primary italic mb-8 pb-8 border-b border-gold/20 leading-relaxed text-justify">
           {article.mo_ta_ngan}
         </div>
         
         {/* KHU VỰC RENDER HTML CHUẨN SEO */}
-        {/* CSS trong này sẽ tự động style cho các thẻ h2, p, strong mà Admin nhập vào */}
         <div 
           className="prose prose-lg max-w-none text-text-main font-medium leading-loose text-justify prose-h2:text-2xl prose-h2:font-black prose-h2:text-primary prose-h2:mt-10 prose-h2:mb-4 prose-p:mb-6 prose-strong:text-primary prose-img:rounded-2xl prose-img:border prose-img:border-gold/20 prose-img:shadow-lg prose-a:text-blue-600 hover:prose-a:text-primary"
           dangerouslySetInnerHTML={{ __html: article.noi_dung }}
         />
+
+        {/* ---------------- VÙNG CHIA SẺ BÀI VIẾT SEO ---------------- */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-gold/20 pt-8 mt-12 gap-4">
+          <span className="font-bold text-sm text-text-main uppercase tracking-widest">Chia sẻ bài viết này:</span>
+          <div className="flex items-center gap-3">
+            
+            {/* Nút Share Facebook */}
+            <button 
+              onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank', 'width=600,height=400')}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#1877F2] text-white text-xs font-black uppercase tracking-widest rounded-xl hover:brightness-110 transition-all shadow-md active:scale-95 flex-1 sm:flex-none"
+            >
+              <span className="material-symbols-outlined text-sm">public</span>
+              Facebook
+            </button>
+
+            {/* Nút Copy Link */}
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                alert('Đã sao chép liên kết bài viết!');
+              }}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border-2 border-gold/20 text-text-main text-xs font-black uppercase tracking-widest rounded-xl hover:bg-gold/10 transition-all shadow-sm active:scale-95 flex-1 sm:flex-none"
+            >
+              <span className="material-symbols-outlined text-sm">link</span>
+              Copy Link
+            </button>
+            
+          </div>
+        </div>
+        {/* ---------------- KẾT THÚC VÙNG CHIA SẺ ---------------- */}
+        
       </div>
     </article>
   );
