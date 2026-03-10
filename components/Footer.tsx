@@ -10,17 +10,30 @@ const Footer: React.FC = () => {
       <div className="mx-auto max-w-7xl relative z-10">
         <div className="grid grid-cols-1 gap-16 border-b border-gold/20 pb-16 lg:grid-cols-4">
           <div className="col-span-1 lg:col-span-2 space-y-8">
-            <div className="flex items-center gap-4">
-              <img 
-                src="https://cazllsidgvysyxbvrftq.supabase.co/storage/v1/object/public/images-sacviet/logo.jpg" 
-                alt="Logo Sắc Việt" 
-                className="h-14 w-14 rounded-full object-cover border-2 border-gold shadow-lg"
-              />
-              <div>
-                 <h2 className="text-2xl font-black uppercase tracking-tighter text-white leading-none">SẮC VIỆT</h2>
-                 <span className="text-gold text-xs font-black tracking-[0.4em] uppercase">VIỆT NAM</span>
-              </div>
-            </div>
+           <div className="flex items-center gap-4">
+  {/* LỒNG CHỨA LOGO - ĐÃ CÂN CHỈNH LẠI TỪNG MILIMET */}
+  <div 
+    className="h-14 w-14 md:h-16 md:w-16 rounded-full border-2 border-gold shadow-lg shrink-0 bg-white"
+    style={{
+      backgroundImage: "url('https://cazllsidgvysyxbvrftq.supabase.co/storage/v1/object/public/images-sacviet/logo.png')",
+      backgroundRepeat: "no-repeat",
+      
+      /* 1. GIẢM ĐỘ ZOOM: Từ 350% xuống 280% để vừa khít, không bị cắt mép dưới */
+      backgroundSize: "300%", 
+      
+      /* 2. KÉO ẢNH XUỐNG: Số 50% đầu là trái/phải. Số 56% sau là kéo ảnh tụt xuống dưới lấp chỗ trắng */
+      backgroundPosition: "46% 20%" 
+    }}
+  />
+  
+  {/* Phần chữ bên cạnh */}
+  <div className="flex flex-col">
+    <span className="font-black text-white text-2xl md:text-3xl leading-none tracking-tight">SẮC VIỆT</span>
+    <span className="text-gold text-[10px] md:text-xs font-black tracking-[0.3em] uppercase mt-1">
+      VIỆT NAM
+    </span>
+  </div>
+</div>
             <p className="max-w-md text-base leading-relaxed text-white/60 font-medium italic">"Dân ta phải biết sử ta, cho tường gốc tích nước nhà Việt Nam." <br/> <span className="text-gold/80 not-italic text-xs mt-2 block">- Hồ Chí Minh</span></p>
             <div className="flex gap-4">
                 {['public', 'video_library', 'share'].map(icon => (

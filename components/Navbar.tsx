@@ -26,20 +26,35 @@ const Navbar: React.FC = () => {
       <header className="sticky top-0 z-[100] w-full border-b border-gold/20 bg-background-light/90 backdrop-blur-md shadow-sm font-display">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 md:px-6 py-3 md:py-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group shrink-0">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gold/20 rounded-full blur-md group-hover:blur-lg transition-all"></div>
-              <img 
-                src="https://cazllsidgvysyxbvrftq.supabase.co/storage/v1/object/public/images-sacviet/logo.jpg" 
-                alt="Logo Sắc Việt" 
-                className="relative h-10 w-10 md:h-12 md:w-12 rounded-full object-cover border-2 border-gold shadow-md transition-transform group-hover:scale-110"
+          <Link to="/" className="flex items-center gap-3">
+  
+              {/* KHUNG CHỨA LOGO - Dùng Background thay vì thẻ <img> */}
+              <div 
+                className="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-gold shrink-0 shadow-md bg-white"
+                style={{
+                  /* Thêm ?v=1 vào cuối link để trình duyệt xóa cache cũ, ép nhận ảnh mới */
+                  backgroundImage: "url('https://cazllsidgvysyxbvrftq.supabase.co/storage/v1/object/public/images-sacviet/logo.png?v=1')",
+                  
+                  backgroundRepeat: "no-repeat",
+                  
+                  /* 1. ĐIỀU CHỈNH ĐỘ TO NHỎ Ở ĐÂY (Tăng giảm số 350%) */
+                  backgroundSize: "105%", 
+                  
+                  /* 2. ĐIỀU CHỈNH VỊ TRÍ TRÁI/PHẢI LÊN/XUỐNG Ở ĐÂY */
+                  /* Số đầu là Trái/Phải (50% là ở giữa), Số sau là Lên/Xuống (50% là ở giữa) */
+                  backgroundPosition: "50% 50%" 
+                }}
               />
-            </div>
-            <div className="flex flex-col leading-none">
-              <h1 className="text-lg md:text-xl font-black uppercase tracking-tighter text-primary group-hover:text-red-700 transition-colors">SẮC VIỆT</h1>
-              <span className="text-[9px] md:text-[10px] font-bold tracking-[0.1em] text-text-soft group-hover:text-gold transition-colors">KẾT NỐI BẢN SẮC VIỆT</span>
-            </div>
-          </Link>
+
+              {/* PHẦN CHỮ BÊN CẠNH */}
+              <div className="flex flex-col">
+                <span className="font-black text-primary text-xl md:text-3xl leading-none">SẮC VIỆT</span>
+                <span className="text-[10px] md:text-xs text-text-soft font-bold tracking-[0.2em] uppercase mt-1">
+                  Kết nối bản sắc
+                </span>
+              </div>
+
+</Link>
 
           {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
