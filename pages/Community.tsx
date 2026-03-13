@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { communityService } from '../services/communityService.ts'; 
@@ -136,7 +137,6 @@ const FestivalWidget = () => {
     try {
       if (!API_KEY) throw new Error("Missing API Key");
       const today = new Date();
-      // Yêu cầu lấy 10 lễ hội để phục vụ cho xem Lịch trọn vẹn
       const prompt = `Bạn là Già làng am hiểu văn hóa. Dựa vào thời điểm hiện tại là năm ${today.getFullYear()}, hãy liệt kê 10 lễ hội văn hóa lớn của các dân tộc Việt Nam diễn ra rải rác trong năm. 
       Trả về định dạng JSON array CHÍNH XÁC như sau, không có text dư thừa, không kèm markdown:
       [{"id": "le-hoi-1", "name": "Tên lễ hội", "solarDate": "YYYY-MM-DD", "lunarDateStr": "Ngày/Tháng Âm lịch", "location": "Tỉnh/Thành phố"}]`;
@@ -151,7 +151,7 @@ const FestivalWidget = () => {
       const processed = rawEvents.map((f: any) => {
         const d = new Date(f.solarDate);
         return { ...f, daysLeft: Math.ceil((d.getTime() - today.getTime()) / 86400000) };
-      }).sort((a: any, b: any) => a.daysLeft - b.daysLeft); // Sắp xếp theo timeline
+      }).sort((a: any, b: any) => a.daysLeft - b.daysLeft);
       
       setEvents(processed.length ? processed : processFallback(today));
     } catch (e) {
@@ -166,7 +166,6 @@ const FestivalWidget = () => {
 
   useEffect(() => { fetchFestivals(); }, [fetchFestivals]);
 
-  // Widget chỉ hiển thị 3 sự kiện gần nhất (chưa diễn ra)
   const upcomingEvents = events.filter(f => f.daysLeft >= 0).slice(0, 3);
 
   return (
