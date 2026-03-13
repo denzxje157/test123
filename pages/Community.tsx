@@ -139,7 +139,7 @@ const FestivalWidget = () => {
       const today = new Date();
       const prompt = `Bạn là Già làng am hiểu văn hóa. Dựa vào thời điểm hiện tại là năm ${today.getFullYear()}, hãy liệt kê 10 lễ hội văn hóa lớn của các dân tộc Việt Nam diễn ra rải rác trong năm. Trả về JSON array: [{"id": "le-hoi-1", "name": "Tên lễ hội", "solarDate": "YYYY-MM-DD", "lunarDateStr": "Ngày/Tháng Âm lịch", "location": "Tỉnh/Thành phố"}]`;
 
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7 } })
       });
