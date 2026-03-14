@@ -41,7 +41,7 @@ const INITIAL_POSTS: Post[] = [
 ];
 
 const FALLBACK_QUIZ = [{ id: 1, question: "Lễ hội 'Cấp Sắc' là của dân tộc nào?", options: ["H'Mông", "Dao", "Tày", "Thái"], correctAnswerStr: "Dao", explanation: "Lễ quan trọng của đàn ông Dao." }];
-const FALLBACK_FESTIVALS = [{ id: 'f1', name: 'Giỗ Tổ Hùng Vương', solarDate: '2026-04-26', lunarDateStr: '10/03 Âm lịch', location: 'Phú Thọ' }];
+const FALLBACK_FESTIVALS = [{ id: 'f1', name: 'Giỗ Tổ Hùng Vương', solarDate: '2026-04-26', lunarDateStr: '10/03 Âm lịch', location: 'Phú Thọ', daysLeft: 43 }];
 
 // --- COMPONENTS ---
 const CalendarModal = ({ onClose, initialDate, festivals }: { onClose: () => void, initialDate: Date, festivals: FestivalDisplay[] }) => {
@@ -108,7 +108,7 @@ const CalendarModal = ({ onClose, initialDate, festivals }: { onClose: () => voi
 const FestivalWidget = () => {
   const [events, setEvents] = useState<FestivalDisplay[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCalendar, setShowCalendar] = useState(false); // PHỤC HỒI STATE BẬT TẮT LỊCH
+  const [showCalendar, setShowCalendar] = useState(false); 
 
   const fetchFestivals = useCallback(async () => {
     setLoading(true);
@@ -118,13 +118,25 @@ const FestivalWidget = () => {
       if (cached && cachedTime && (Date.now() - Number(cachedTime) < 3600000)) {
          setEvents(JSON.parse(cached)); setLoading(false); return;
       }
-      if (!API_KEY) throw new Error("No Key");
+
+      // FIX LỖI 429: NẾU BỊ CHẶN TRƯỚC ĐÓ THÌ DỪNG LẠI, KHÔNG GỌI API NỮA ĐỂ CHỐNG LỖI CONSOLE
+      if (localStorage.getItem('gemini_429_blocked')) {
+         throw new Error("API Limit Blocked");
+      }
       
+      if (!API_KEY) throw new Error("No Key");
       const prompt = `Liệt kê 5 lễ hội văn hóa Việt Nam sắp diễn ra năm 2026. Trả về mảng JSON: [{"id": "le-hoi-1", "name": "Tên lễ hội", "solarDate": "YYYY-MM-DD", "lunarDateStr": "Ngày/Tháng Âm lịch", "location": "Tỉnh/Thành phố"}]`;
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, responseMimeType: "application/json" } })
       });
+
+      // NẾU GOOGLE TRẢ VỀ 429, KHÓA LUÔN VIỆC GỌI API BẰNG BIẾN LOCALSTORAGE
+      if (res.status === 429) {
+        localStorage.setItem('gemini_429_blocked', 'true');
+        throw new Error("Quota Exceeded");
+      }
+      
       if (!res.ok) throw new Error("Lỗi API");
       
       const data = await res.json();
@@ -148,13 +160,13 @@ const FestivalWidget = () => {
         <div className="flex items-center justify-between mb-4 border-b border-gold/10 pb-3">
            <h3 className="font-black text-text-main text-sm uppercase tracking-widest flex items-center gap-2"><span className="material-symbols-outlined text-primary">event_upcoming</span>Mùa Lễ Hội</h3>
            <div className="flex items-center gap-2">
-               {/* NÚT XEM LỊCH ĐÃ HOẠT ĐỘNG */}
                <button onClick={() => setShowCalendar(true)} className="text-[10px] md:text-xs text-primary font-bold hover:bg-background-light px-2 py-1 rounded-lg border border-gold/20 shadow-sm transition-all active:scale-95 flex items-center gap-1">Xem lịch <span className="material-symbols-outlined text-[12px] md:text-[14px]">calendar_month</span></button>
-               <button onClick={fetchFestivals} className="text-primary hover:rotate-180 transition-transform p-1"><span className="material-symbols-outlined text-sm md:text-base">sync</span></button>
+               {/* RESET NẾU BẤM ĐỒNG BỘ */}
+               <button onClick={() => { localStorage.removeItem('sacviet_festivals_time'); localStorage.removeItem('gemini_429_blocked'); fetchFestivals(); }} className="text-primary hover:rotate-180 transition-transform p-1"><span className="material-symbols-outlined text-sm md:text-base">sync</span></button>
            </div>
         </div>
         <div className="space-y-4">
-           {loading ? <div className="text-center py-4 text-xs font-bold animate-pulse">Già làng đang xem lịch...</div> : events.slice(0, 3).map(f => (
+           {loading ? <div className="text-center py-4 text-xs font-bold animate-pulse text-gold">Già làng đang xem lịch...</div> : events.slice(0, 3).map(f => (
               <div key={f.id} className="flex gap-4 items-center group cursor-pointer hover:bg-gold/5 p-2 rounded-xl transition-colors">
                  <div className="bg-primary/10 text-primary rounded-xl p-2 w-14 text-center border border-primary/20 shrink-0">
                     <span className="block text-xl font-black leading-none my-0.5">{f.daysLeft}</span>
@@ -168,8 +180,6 @@ const FestivalWidget = () => {
            ))}
         </div>
       </div>
-      
-      {/* RENDER MODAL LỊCH KHI BẤM NÚT */}
       {showCalendar && <CalendarModal onClose={() => setShowCalendar(false)} initialDate={new Date()} festivals={events} />}
     </>
   );
@@ -190,6 +200,11 @@ const QuizWidget = () => {
       if (cached && cachedTime && (Date.now() - Number(cachedTime) < 3600000)) {
          setQuestions(JSON.parse(cached)); setGenerating(false); return;
       }
+      
+      // FIX LỖI 429: CHẶN GỌI LẠI NẾU ĐÃ BỊ GOOGLE CHẶN
+      if (localStorage.getItem('gemini_429_blocked')) {
+         throw new Error("API Limit Blocked");
+      }
 
       if (!API_KEY) throw new Error("No API Key");
       const prompt = `Tạo 5 câu hỏi trắc nghiệm về văn hóa 54 dân tộc Việt Nam. Trả về mảng JSON: [{"id": 1, "question": "...", "options": ["A", "B", "C", "D"], "correctAnswerStr": "A", "explanation": "..."}]`;
@@ -198,6 +213,12 @@ const QuizWidget = () => {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.9, responseMimeType: "application/json" } }) 
       });
+
+      if (res.status === 429) {
+        localStorage.setItem('gemini_429_blocked', 'true');
+        throw new Error("Quota Exceeded");
+      }
+      
       if (!res.ok) throw new Error("Lỗi API");
       
       const data = await res.json();
@@ -225,7 +246,7 @@ const QuizWidget = () => {
              <div className="size-20 mx-auto bg-gold/20 rounded-full flex items-center justify-center mb-3"><span className="material-symbols-outlined text-4xl text-primary">workspace_premium</span></div>
              <p className="text-sm font-bold uppercase tracking-widest mb-1 text-text-soft">Điểm của bạn</p>
              <h2 className="text-3xl font-black text-primary mb-6">{score}</h2>
-             <button onClick={() => { localStorage.removeItem('sacviet_quiz_time'); initQuiz(); }} className="w-full py-3 border-2 border-gold/30 rounded-full font-bold text-xs uppercase hover:bg-gold hover:text-white transition-all text-text-main active:scale-95">Thi lại</button>
+             <button onClick={() => { localStorage.removeItem('sacviet_quiz_time'); localStorage.removeItem('gemini_429_blocked'); initQuiz(); }} className="w-full py-3 border-2 border-gold/30 rounded-full font-bold text-xs uppercase hover:bg-gold hover:text-white transition-all text-text-main active:scale-95">Thi lại</button>
           </div>
         ) : currentQ ? (
           <div className="flex-1 animate-slide-up">
@@ -280,11 +301,10 @@ const PostComposer = ({ onPost, currentUser }: { onPost: (content: string, image
 const PostCard = React.memo(({ post, currentUser, isAdmin, onDelete }: { post: Post, currentUser: any, isAdmin: boolean, onDelete: (id: string) => void }) => {
   const [liked, setLiked] = useState(false); 
   const [likes, setLikes] = useState(post.likes || 0);
-  const [showComments, setShowComments] = useState(false); // PHỤC HỒI STATE ĐÓNG MỞ BÌNH LUẬN
+  const [showComments, setShowComments] = useState(false); 
   const [commentsList, setCommentsList] = useState<CommentDef[]>(post.localComments || []);
   const [newComment, setNewComment] = useState('');
 
-  // HÀM GỬI BÌNH LUẬN
   const sendComment = () => {
      if(!newComment.trim()) return;
      const newC: CommentDef = { id: Date.now().toString(), user: currentUser.name, avatar: currentUser.avatar, text: newComment, time: 'Vừa xong' };
@@ -292,7 +312,6 @@ const PostCard = React.memo(({ post, currentUser, isAdmin, onDelete }: { post: P
      setNewComment('');
   };
 
-  // HÀM CHIA SẺ
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     alert("Đã sao chép liên kết bài viết. Hãy gửi cho bạn bè nhé!");
@@ -322,24 +341,20 @@ const PostCard = React.memo(({ post, currentUser, isAdmin, onDelete }: { post: P
        </div>
        {post.image && <div className="w-full bg-black/5 relative"><img src={post.image} className="w-full max-h-[400px] object-cover transition-transform duration-[2s] group-hover:scale-[1.02]" loading="lazy" /></div>}
        
-       {/* CÁC NÚT TƯƠNG TÁC ĐÃ SỐNG LẠI */}
        <div className="p-3 flex items-center gap-6 border-t border-gold/5 bg-background-light/30">
          <button onClick={() => { setLiked(!liked); setLikes(liked ? likes - 1 : likes + 1); }} className={`flex items-center gap-1.5 font-black text-xs transition-colors ${liked ? 'text-primary' : 'text-text-soft hover:text-primary'}`}>
             <span className={`material-symbols-outlined text-lg ${liked ? 'fill-1 animate-ping-once' : ''}`}>{liked ? 'favorite' : 'favorite_border'}</span> {likes}
          </button>
          
-         {/* NÚT BÌNH LUẬN */}
          <button onClick={() => setShowComments(!showComments)} className={`flex items-center gap-1.5 font-black text-xs transition-colors ${showComments ? 'text-primary' : 'text-text-soft hover:text-primary'}`}>
             <span className={`material-symbols-outlined text-lg ${showComments ? 'fill-1' : ''}`}>chat_bubble</span> {commentsList.length}
          </button>
          
-         {/* NÚT CHIA SẺ */}
          <button onClick={handleShare} className="flex items-center gap-1.5 text-text-soft font-black text-xs ml-auto hover:text-primary transition-colors active:scale-95">
             <span className="material-symbols-outlined text-lg">share</span>
          </button>
        </div>
 
-       {/* GIAO DIỆN BÌNH LUẬN (CHỈ HIỆN KHI BẤM NÚT) */}
        {showComments && (
          <div className="p-4 bg-background-light border-t border-gold/10 animate-fade-in">
             <div className="space-y-4 mb-4 max-h-[250px] overflow-y-auto custom-scrollbar">
@@ -355,7 +370,6 @@ const PostCard = React.memo(({ post, currentUser, isAdmin, onDelete }: { post: P
                ))}
             </div>
             
-            {/* KHUNG GÕ BÌNH LUẬN */}
             <div className="flex gap-2 items-center mt-3 relative">
                <div className="size-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-black shrink-0 shadow-md">{currentUser.avatar}</div>
                <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendComment()} placeholder="Viết bình luận của bạn..." className="flex-1 bg-white border border-gold/20 rounded-full px-4 py-2 text-xs font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-text-main" />
@@ -369,7 +383,7 @@ const PostCard = React.memo(({ post, currentUser, isAdmin, onDelete }: { post: P
 
 const Community: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [visibleCount, setVisibleCount] = useState(3); // Nút tải thêm hoạt động dựa vào biến này
+  const [visibleCount, setVisibleCount] = useState(3); 
   const [isLoading, setIsLoading] = useState(true);
   
   let auth: any = null; try { auth = useAuth(); } catch (e) {}
@@ -422,12 +436,10 @@ const Community: React.FC = () => {
              <PostComposer onPost={handlePost} currentUser={currentUserData} />
              {isLoading ? <div className="text-center py-10 font-bold text-gold animate-pulse">Đang tải bài viết...</div> : (
                <div className="space-y-6">
-                 {/* TRUYỀN DỮ LIỆU USER VÀO ĐỂ HIỆN AVATAR LÚC COMMENT */}
                  {visiblePosts.map(p => <PostCard key={p.id} post={p} currentUser={currentUserData} onDelete={handleDeletePost} isAdmin={isAdmin} />)}
                </div>
              )}
              
-             {/* NÚT TẢI THÊM BÀI VIẾT ĐÃ HOẠT ĐỘNG */}
              {!isLoading && visibleCount < posts.length && (
                <div className="text-center pb-10">
                  <button onClick={() => setVisibleCount(prev => prev + 3)} className="px-8 py-3 rounded-full border-2 border-primary text-primary font-black uppercase text-xs tracking-widest hover:bg-primary hover:text-white transition-all active:scale-95 shadow-sm">
