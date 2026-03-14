@@ -135,6 +135,8 @@ const FestivalWidget = () => {
       localStorage.setItem('sacviet_festivals', JSON.stringify(processed)); localStorage.setItem('sacviet_festivals_time', Date.now().toString());
     } catch (e) {
       setEvents(FALLBACK_FESTIVALS as any);
+      localStorage.setItem('sacviet_festivals', JSON.stringify(FALLBACK_FESTIVALS)); 
+      localStorage.setItem('sacviet_festivals_time', Date.now().toString());
     } finally { setLoading(false); }
   }, []);
 
@@ -204,6 +206,8 @@ const QuizWidget = () => {
       localStorage.setItem('sacviet_quiz', JSON.stringify(qData)); localStorage.setItem('sacviet_quiz_time', Date.now().toString());
     } catch (e) { 
       setQuestions([...FALLBACK_QUIZ]); 
+      localStorage.setItem('sacviet_quiz', JSON.stringify(FALLBACK_QUIZ)); 
+      localStorage.setItem('sacviet_quiz_time', Date.now().toString());
     } finally { setGenerating(false); }
   }, []);
 
